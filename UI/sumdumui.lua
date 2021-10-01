@@ -1613,7 +1613,7 @@ local UIToggle
 local UnlockMouse
 function library:Init()
 	
-	self.base = self.base or self:Create("ScreenGui")
+	self.base = (self and self.base) or self:Create("ScreenGui")
 	if syn and syn.protect_gui then
 		syn.protect_gui(self.base)
         self.base.Parent = game:GetService"CoreGui"
