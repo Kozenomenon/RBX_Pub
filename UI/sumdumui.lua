@@ -21,7 +21,8 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     OutlineColor = Color3.fromRGB(0,60,60),
     OpenColor = Color3.fromRGB(0,30,30),
     CloseColor = Color3.fromRGB(0,50,50),
-    WindowWidth = 300,
+    AccentColor = Color3.fromRGB(0,100,100),
+    WindowWidth = 350,
     
 }}
 
@@ -91,7 +92,7 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 		Size = UDim2.new(0, library.settings.WindowWidth, 0, size),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = library.settings.WindowBackColor, 
+		ImageColor3 = library.settings.SlightColor, 
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.04,
@@ -246,7 +247,7 @@ function createToggle(option, parent)
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = option.state and Color3.fromRGB(255, 65, 65) or Color3.fromRGB(100, 100, 100),
+		ImageColor3 = option.state and library.settings.AccentColor or Color3.fromRGB(100, 100, 100),
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -258,7 +259,7 @@ function createToggle(option, parent)
 		Size = UDim2.new(1, -4, 1, -4),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = option.state and Color3.fromRGB(255, 65, 65) or library.settings.WindowBackColor,
+		ImageColor3 = option.state and library.settings.AccentColor or library.settings.WindowBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -308,9 +309,9 @@ function createToggle(option, parent)
 		library.flags[self.flag] = state
 		self.state = state
 		checkmarkHolder:TweenSize(option.state and UDim2.new(1, -8, 1, -8) or UDim2.new(0, 0, 1, -8), "Out", "Quad", 0.2, true)
-		tweenService:Create(tickboxInner, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = state and Color3.fromRGB(255, 65, 65) or library.settings.WindowBackColor}):Play()
+		tweenService:Create(tickboxInner, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = state and library.settings.AccentColor or library.settings.WindowBackColor}):Play()
 		if state then
-			tweenService:Create(tickboxOutline, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(255, 65, 65)}):Play()
+			tweenService:Create(tickboxOutline, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 		else
 			if inContact then
 				tweenService:Create(tickboxOutline, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(140, 140, 140)}):Play()
@@ -364,7 +365,7 @@ function createButton(option, parent)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			library.flags[option.flag] = true
 			clicking = true
-			tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(255, 65, 65)}):Play()
+			tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 			option.callback()
 		end
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
@@ -446,7 +447,7 @@ local function createBind(option, parent)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
 			binding = true
 			bindinput.Text = "..."
-			tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(255, 65, 65)}):Play()
+			tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 		end
 		if input.UserInputType == Enum.UserInputType.MouseMovement then
 			inContact = false
@@ -607,8 +608,8 @@ local function createSlider(option, parent)
 	local inContact
 	main.InputBegan:connect(function(input)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
-			tweenService:Create(fill, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(255, 65, 65)}):Play()
-			tweenService:Create(circle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(3.5, 0, 3.5, 0), ImageColor3 = Color3.fromRGB(255, 65, 65)}):Play()
+			tweenService:Create(fill, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
+			tweenService:Create(circle, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(3.5, 0, 3.5, 0), ImageColor3 = library.settings.AccentColor}):Play()
 			sliding = true
 			option:SetValue(option.min + ((input.Position.X - slider.AbsolutePosition.X) / slider.AbsoluteSize.X) * (option.max - option.min))
 		end
@@ -734,7 +735,7 @@ local function createList(option, parent, holder)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.OpenColor,
+		ImageColor3 = library.settings.SlightColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -983,7 +984,7 @@ local function createBox(option, parent)
 	
 	inputvalue.Focused:connect(function()
 		focused = true
-		tweenService:Create(outline, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = Color3.fromRGB(255, 65, 65)}):Play()
+		tweenService:Create(outline, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 	end)
 	
 	inputvalue.FocusLost:connect(function(enter)
@@ -1007,7 +1008,7 @@ local function createColorPickerWindow(option)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.OpenColor,
+		ImageColor3 = library.settings.SlightColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
