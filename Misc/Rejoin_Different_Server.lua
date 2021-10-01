@@ -35,6 +35,7 @@ function RejoinNewServer(teleportDelay: number,serverLimit: number)
 		end
 	else
 		print("Unexpected Response >>>",Response.StatusCode,Response.StatusMessage,Response.Body)
+		return false
 	end
 
 	if (newJobId ~= nil) then
