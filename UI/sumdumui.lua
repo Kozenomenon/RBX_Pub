@@ -1613,20 +1613,17 @@ local UIToggle
 local UnlockMouse
 function library:Init()
 	
-	self.base = (self and self.base) or self:Create("ScreenGui")
+	self.base = self.base or self:Create("ScreenGui")
 	if syn and syn.protect_gui then
 		syn.protect_gui(self.base)
-        self.base.Parent = game:GetService"CoreGui"
 	elseif get_hidden_gui then
 		get_hidden_gui(self.base)
-        self.base.Parent = game:GetService"CoreGui"
-    elseif gethui then -- for script-ware, added by koz
-        self.base.Parent = gethui()
 	else
 		game:GetService"Players".LocalPlayer:Kick("Error: protect_gui function not found")
 		return
 	end
-	
+	self.base.Parent = (gethui and gethui()) or game:GetService("CoreGui")
+
 	self.cursor = self.cursor or self:Create("Frame", {
 		ZIndex = 100,
 		AnchorPoint = Vector2.new(0, 0),
