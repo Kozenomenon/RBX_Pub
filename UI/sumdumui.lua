@@ -20,7 +20,9 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     SubBackColor = Color3.fromRGB(0,19,19),
     OutlineColor = Color3.fromRGB(0,60,60),
     OpenColor = Color3.fromRGB(0,30,30),
-    CloseColor = Color3.fromRGB(0,50,50)
+    CloseColor = Color3.fromRGB(0,50,50),
+    WindowWidth = 300,
+    
 }}
 
 --Services
@@ -86,10 +88,10 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 	parentTable.main = library:Create("ImageButton", {
 		LayoutOrder = subHolder and parentTable.position or 0,
 		Position = UDim2.new(0, 20 + (250 * (parentTable.position or 0)), 0, 20),
-		Size = UDim2.new(0, 230, 0, size),
+		Size = UDim2.new(0, library.settings.WindowWidth, 0, size),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = library.settings.ForegroundColor, 
+		ImageColor3 = library.settings.WindowBackColor, 
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.04,
@@ -157,7 +159,7 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 	
 	layout.Changed:connect(function()
 		parentTable.content.Size = UDim2.new(1, 0, 0, layout.AbsoluteContentSize.Y)
-		parentTable.main.Size = #parentTable.options > 0 and parentTable.open and UDim2.new(0, 230, 0, layout.AbsoluteContentSize.Y + size) or UDim2.new(0, 230, 0, size)
+		parentTable.main.Size = #parentTable.options > 0 and parentTable.open and UDim2.new(0, library.settings.WindowWidth, 0, layout.AbsoluteContentSize.Y + size) or UDim2.new(0, library.settings.WindowWidth, 0, size)
 	end)
 	
 	if not subHolder then
@@ -194,7 +196,7 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 			else
 				tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = parentTable.open and library.settings.MainBackColor or Color3.fromRGB(6, 6, 6)}):Play()
 			end
-			parentTable.main:TweenSize(#parentTable.options > 0 and parentTable.open and UDim2.new(0, 230, 0, layout.AbsoluteContentSize.Y + size) or UDim2.new(0, 230, 0, size), "Out", "Quad", 0.2, true)
+			parentTable.main:TweenSize(#parentTable.options > 0 and parentTable.open and UDim2.new(0, library.settings.WindowWidth, 0, layout.AbsoluteContentSize.Y + size) or UDim2.new(0, library.settings.WindowWidth, 0, size), "Out", "Quad", 0.2, true)
 		end
 	end)
 
