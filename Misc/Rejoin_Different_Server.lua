@@ -8,7 +8,7 @@ function RejoinNewServer(teleportDelay: number,serverLimit: number)
 	local url = ("https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=%s"):format(game.PlaceId,tostring(serverLimit))
 
 	-- afaik this will only work with: synapse, script-ware, krnl, and protosmasher. or it will default to the rbx http get. 
-	local req = (syn and syn.request) or (http and http.request) or http_request or request or function() local resp = {}; resp.Body = game:HttpGetAsync(url); return resp.Body end
+	local req = (syn and syn.request) or (http and http.request) or http_request or request or function() local resp = {}; resp.Body = game:HttpGetAsync(url); return resp end
 	local Response = nil
 	pcall(function() 
 		Response = req({
