@@ -4,8 +4,8 @@
 ]]
 
 local library = {flags = {}, windows = {}, open = true, settings = {
-    TitleFont = Enum.Font.PermanentMarker,
-    NormalFont = Enum.Font.RobotoMono,
+    TitleFont = Enum.Font.GothamBold,
+    NormalFont = Enum.Font.Gotham,
     SpecialFont = Enum.Font.Code,
     TitleFontSize = 17,
     NormalFontSize = 17,
@@ -15,9 +15,9 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     TitleBackColor = Color3.fromRGB(0,6,6),
     ForegroundColor = Color3.fromRGB(0,255,255),
     SlightColor = Color3.fromRGB(0, 40, 40),
-    WindowBackColor = Color3.fromRGB(0,20,20),
-    MainBackColor = Color3.fromRGB(0,12,12),
-    SubBackColor = Color3.fromRGB(0,19,19),
+    BoxBackColor = Color3.fromRGB(0,11,11),
+    MainOpenColor = Color3.fromRGB(0,12,12),
+    SubOpenColor = Color3.fromRGB(0,23,23),
     OutlineColor = Color3.fromRGB(0,60,60),
     OpenColor = Color3.fromRGB(0,30,30),
     CloseColor = Color3.fromRGB(0,50,50),
@@ -106,7 +106,7 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 			Size = UDim2.new(1, 0, 0, size),
 			BackgroundTransparency = 1,
 			Image = "rbxassetid://3570695787",
-			ImageColor3 = parentTable.open and (subHolder and library.settings.SubBackColor or library.settings.MainBackColor) or (subHolder and library.settings.MainBackColor or Color3.fromRGB(6, 6, 6)),
+			ImageColor3 = parentTable.open and (subHolder and library.settings.SubOpenColor or library.settings.MainOpenColor) or (subHolder and library.settings.MainOpenColor or Color3.fromRGB(6, 6, 6)),
 			ScaleType = Enum.ScaleType.Slice,
 			SliceCenter = Rect.new(100, 100, 100, 100),
 			SliceScale = 0.04,
@@ -193,9 +193,9 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 			parentTable.open = not parentTable.open
 			tweenService:Create(close, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Rotation = parentTable.open and 90 or 180, ImageColor3 = parentTable.open and library.settings.CloseColor or library.settings.OpenColor}):Play()
 			if subHolder then
-				tweenService:Create(title, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = parentTable.open and library.settings.SubBackColor or library.settings.MainBackColor}):Play()
+				tweenService:Create(title, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = parentTable.open and library.settings.SubOpenColor or library.settings.MainOpenColor}):Play()
 			else
-				tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = parentTable.open and library.settings.MainBackColor or Color3.fromRGB(6, 6, 6)}):Play()
+				tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = parentTable.open and library.settings.MainOpenColor or Color3.fromRGB(6, 6, 6)}):Play()
 			end
 			parentTable.main:TweenSize(#parentTable.options > 0 and parentTable.open and UDim2.new(0, library.settings.WindowWidth, 0, layout.AbsoluteContentSize.Y + size) or UDim2.new(0, library.settings.WindowWidth, 0, size), "Out", "Quad", 0.2, true)
 		end
@@ -259,7 +259,7 @@ function createToggle(option, parent)
 		Size = UDim2.new(1, -4, 1, -4),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = option.state and library.settings.AccentColor or library.settings.WindowBackColor,
+		ImageColor3 = option.state and library.settings.AccentColor or library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -279,7 +279,7 @@ function createToggle(option, parent)
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://4919148038",
-		ImageColor3 = library.settings.WindowBackColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		Parent = checkmarkHolder
 	})
 	
@@ -309,7 +309,7 @@ function createToggle(option, parent)
 		library.flags[self.flag] = state
 		self.state = state
 		checkmarkHolder:TweenSize(option.state and UDim2.new(1, -8, 1, -8) or UDim2.new(0, 0, 1, -8), "Out", "Quad", 0.2, true)
-		tweenService:Create(tickboxInner, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = state and library.settings.AccentColor or library.settings.WindowBackColor}):Play()
+		tweenService:Create(tickboxInner, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = state and library.settings.AccentColor or library.settings.BoxBackColor}):Play()
 		if state then
 			tweenService:Create(tickboxOutline, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 		else
@@ -826,13 +826,13 @@ local function createList(option, parent, holder)
 		label.InputBegan:connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				clicking = true
-				tweenService:Create(label, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = library.settings.MainBackColor}):Play()
+				tweenService:Create(label, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = library.settings.MainOpenColor}):Play()
 				self:SetValue(value)
 			end
 			if input.UserInputType == Enum.UserInputType.MouseMovement then
 				inContact = true
 				if not clicking then
-					tweenService:Create(label, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = library.settings.WindowBackColor}):Play()
+					tweenService:Create(label, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = library.settings.BoxBackColor}):Play()
 				end
 			end
 		end)
@@ -840,7 +840,7 @@ local function createList(option, parent, holder)
 		label.InputEnded:connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				clicking = false
-				tweenService:Create(label, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = inContact and library.settings.WindowBackColor or library.settings.OpenColor}):Play()
+				tweenService:Create(label, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = inContact and library.settings.BoxBackColor or library.settings.OpenColor}):Play()
 			end
 			if input.UserInputType == Enum.UserInputType.MouseMovement then
 				inContact = false
@@ -927,7 +927,7 @@ local function createBox(option, parent)
 		Size = UDim2.new(1, -library.settings.SubFontSize, 1, -library.settings.SmallFontSize),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = library.settings.WindowBackColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.01,
@@ -1172,7 +1172,7 @@ local function createColorPickerWindow(option)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.WindowBackColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -1197,13 +1197,13 @@ local function createColorPickerWindow(option)
 			option:SetColor(originalColor)
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainBackColor}):Play()
+			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
 		end
 	end)
 	
 	option.resetColor.InputEnded:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.WindowBackColor}):Play()
+			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
 		end
 	end)
 	
@@ -1214,7 +1214,7 @@ local function createColorPickerWindow(option)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.WindowBackColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -1242,13 +1242,13 @@ local function createColorPickerWindow(option)
 			end
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainBackColor}):Play()
+			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
 		end
 	end)
 	
 	option.undoColor.InputEnded:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.WindowBackColor}):Play()
+			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
 		end
 	end)
 	
@@ -1259,7 +1259,7 @@ local function createColorPickerWindow(option)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.WindowBackColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -1284,13 +1284,13 @@ local function createColorPickerWindow(option)
 			option:SetColor(currentColor)
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainBackColor}):Play()
+			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
 		end
 	end)
 	
 	option.setColor.InputEnded:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.WindowBackColor}):Play()
+			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
 		end
 	end)
 	
@@ -1301,7 +1301,7 @@ local function createColorPickerWindow(option)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.WindowBackColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -1335,13 +1335,13 @@ local function createColorPickerWindow(option)
 			end
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainBackColor}):Play()
+			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
 		end
 	end)
 	
 	option.rainbow.InputEnded:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.WindowBackColor}):Play()
+			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
 		end
 	end)
 	
