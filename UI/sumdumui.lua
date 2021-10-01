@@ -4,8 +4,8 @@
 ]]
 
 local library = {flags = {}, windows = {}, open = true, settings = {
-    TitleFont = Enum.Font.SpecialElite,
-    NormalFont = Enum.Font.SciFi,
+    TitleFont = Enum.Font.PermanentMarker,
+    NormalFont = Enum.Font.RobotoMono,
     SpecialFont = Enum.Font.Code,
     TitleFontSize = 17,
     NormalFontSize = 17,
@@ -22,7 +22,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     OpenColor = Color3.fromRGB(0,30,30),
     CloseColor = Color3.fromRGB(0,50,50),
     AccentColor = Color3.fromRGB(0,100,100),
-    WindowWidth = 350,
+    WindowWidth = 300,
     
 }}
 
@@ -120,7 +120,7 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 		BackgroundColor3 = library.settings.TitleBackColor,
 		BorderSizePixel = 0,
 		Text = holderTitle,
-		TextSize = subHolder and 16 or 17,
+		TextSize = subHolder and library.settings.SubFontSize or library.settings.TitleFontSize,
 		Font = library.settings.TitleFont,
 		TextColor3 = library.settings.ForegroundColor, 
 		Parent = parentTable.main
@@ -412,7 +412,7 @@ local function createBind(option, parent)
 	
 	local round = library:Create("ImageLabel", {
 		Position = UDim2.new(1, -6, 0, 4),
-		Size = UDim2.new(0, -textService:GetTextSize(text, 16, library.settings.NormalFont, Vector2.new(9e9, 9e9)).X - 16, 1, -10),
+		Size = UDim2.new(0, -textService:GetTextSize(text, library.settings.SubFontSize, library.settings.NormalFont, Vector2.new(9e9, 9e9)).X - library.settings.SubFontSize, 1, -10),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
@@ -515,7 +515,7 @@ local function createBind(option, parent)
 			bindinput.Text = self.key
 		end
 		tweenService:Create(round, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = inContact and library.settings.OutlineColor or library.settings.SlightColor}):Play()
-		round.Size = UDim2.new(0, -textService:GetTextSize(bindinput.Text, 15, library.settings.NormalFont, Vector2.new(9e9, 9e9)).X - 16, 1, -10)	
+		round.Size = UDim2.new(0, -textService:GetTextSize(bindinput.Text, library.settings.InputFontSize, library.settings.NormalFont, Vector2.new(9e9, 9e9)).X - library.settings.SubFontSize, 1, -10)	
 	end
 end
 
@@ -695,7 +695,7 @@ local function createList(option, parent, holder)
 	
 	local title = library:Create("TextLabel", {
 		Position = UDim2.new(0, 12, 0, 8),
-		Size = UDim2.new(1, -24, 0, 14),
+		Size = UDim2.new(1, -24, 0, library.settings.SmallFontSize),
 		BackgroundTransparency = 1,
 		Text = option.text,
 		TextSize = library.settings.SmallFontSize,
@@ -718,7 +718,7 @@ local function createList(option, parent, holder)
 	})
 	
 	library:Create("ImageLabel", {
-		Position = UDim2.new(1, -16, 0, 16),
+		Position = UDim2.new(1, -library.settings.SubFontSize, 0, library.settings.SubFontSize),
 		Size = UDim2.new(-1, 32, 1, -32),
 		SizeConstraint = Enum.SizeConstraint.RelativeYY,
 		Rotation = 90,
@@ -924,7 +924,7 @@ local function createBox(option, parent)
 	
 	local round = library:Create("ImageLabel", {
 		Position = UDim2.new(0, 8, 0, 6),
-		Size = UDim2.new(1, -16, 1, -14),
+		Size = UDim2.new(1, -library.settings.SubFontSize, 1, -library.settings.SmallFontSize),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageColor3 = library.settings.WindowBackColor,
@@ -936,7 +936,7 @@ local function createBox(option, parent)
 	
 	local title = library:Create("TextLabel", {
 		Position = UDim2.new(0, 12, 0, 8),
-		Size = UDim2.new(1, -24, 0, 14),
+		Size = UDim2.new(1, -24, 0, library.settings.SmallFontSize),
 		BackgroundTransparency = 1,
 		Text = option.text,
 		TextSize = library.settings.SmallFontSize,
