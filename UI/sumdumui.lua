@@ -7,7 +7,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     TitleFont = Enum.Font.SpecialElite,
     NormalFont = Enum.Font.SciFi,
     SpecialFont = Enum.Font.Code,
-    TitleFontSize = 17, 
+    TitleFontSize = 17,
     NormalFontSize = 17,
     SubFontSize = 16,
     InputFontSize = 15,
@@ -18,7 +18,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     MainBackColor = Color3.fromRGB(0,12,12),
     SubBackColor = Color3.fromRGB(0,19,19),
     OutlineColor = Color3.fromRGB(0,60,60),
-    OpenColor = Color3.fromRBG(0,30,30),
+    OpenColor = Color3.fromRGB(0,30,30),
     CloseColor = Color3.fromRGB(0,50,50)
 }}
 
