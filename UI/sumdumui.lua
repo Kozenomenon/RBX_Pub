@@ -1064,6 +1064,14 @@ local function createColorPickerWindow(option)
 	local originalColor = option.color
 	local rainbowEnabled
 	local rainbowLoop
+	local reset_clicking
+	local reset_inContact
+	local undo_clicking
+	local undo_inContact
+	local set_clicking
+	local set_inContact
+	local rainbow_clicking
+	local rainbow_inContact
 	
 	function option:updateVisuals(Color)
 		currentColor = Color
@@ -1231,8 +1239,7 @@ local function createColorPickerWindow(option)
 		Parent = option.resetColor
 	})
 	
-	local reset_clicking = false
-	local reset_inContact = false
+	
 	option.resetColor.InputBegan:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
 			reset_clicking = true
@@ -1291,6 +1298,8 @@ local function createColorPickerWindow(option)
 	
 	option.undoColor.InputBegan:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+			undo_clicking = true
+			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 			local Num = #previousColors == 1 and 0 or 1
 			option:SetColor(previousColors[#previousColors - Num])
 			if #previousColors ~= 1 then
@@ -1298,13 +1307,24 @@ local function createColorPickerWindow(option)
 			end
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+			undo_inContact = true
 			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
 	option.undoColor.InputEnded:connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+			undo_clicking = false
+			if undo_inContact then
+				tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
+			else
+				tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
+		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			if not undo_clicking then
+				tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
 		end
 	end)
 	
@@ -1336,17 +1356,30 @@ local function createColorPickerWindow(option)
 	
 	option.setColor.InputBegan:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+			set_clicking = true
+			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 			table.insert(previousColors, currentColor)
 			option:SetColor(currentColor)
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+			set_inContact = true
 			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
 	option.setColor.InputEnded:connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+			set_clicking = false
+			if set_inContact then
+				tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
+			else
+				tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
+		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			if not set_clicking then
+				tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
 		end
 	end)
 	
@@ -1378,6 +1411,8 @@ local function createColorPickerWindow(option)
 	
 	option.rainbow.InputBegan:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+			rainbow_clicking = true
+			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 			rainbowEnabled = not rainbowEnabled
 			if rainbowEnabled then
 				rainbowLoop = runService.Heartbeat:connect(function()
@@ -1391,13 +1426,24 @@ local function createColorPickerWindow(option)
 			end
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+			rainbow_inContact = true
 			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
 	option.rainbow.InputEnded:connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 then
+			rainbow_clicking = false
+			if rainbow_inContact then
+				tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
+			else
+				tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
+		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			if not rainbow_clicking then
+				tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
 		end
 	end)
 	
