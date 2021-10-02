@@ -27,7 +27,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     SubFontSize = 16,
     InputFontSize = 15,
     SmallFontSize = 14,
-	WindowBackColor = Color3.fromRGB(0,25,25),
+	WindowBackColor = Color3.fromRGB(0,33,33),
     TitleBackColor = Color3.fromRGB(0,6,6),
     ForegroundColor = Color3.fromRGB(0,255,255),
     SlightColor = Color3.fromRGB(0, 40, 40),
@@ -49,13 +49,13 @@ local function setup_settings(settings)
 			local sett = library.settings
 			local c1 = settings.BlendColor1
 			local c2 = settings.BlendColor2
-			sett.WindowBackColor = color_blend(c1,c2,0.1)
+			sett.WindowBackColor = color_blend(c1,c2,0.135)
 			sett.TitleBackColor = color_blend(c1,c2,0.025)
 			sett.ForegroundColor = color_blend(c1,c2,1)
-			sett.SlightColor = color_blend(c1,c2,0.16)
+			sett.SlightColor = color_blend(c1,c2,0.17)
 			sett.BoxBackColor = color_blend(c1,c2,0.05)
 			sett.MainOpenColor = color_blend(c1,c2,0.065)
-			sett.SubOpenColor = color_blend(c1,c2,0.12)
+			sett.SubOpenColor = color_blend(c1,c2,0.155)
 			sett.OutlineColor = color_blend(c1,c2,0.325)
 			sett.OpenColor = color_blend(c1,c2,0.15)
 			sett.CloseColor = color_blend(c1,c2,0.2)
@@ -1050,7 +1050,7 @@ local function createColorPickerWindow(option)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.SlightColor,
+		ImageColor3 = library.settings.WindowBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
