@@ -42,22 +42,27 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     
 }}
 
-local function setup_color_blend()
-	if (library.settings.BlendColor1 and library.settings.BlendColor2) then
-		local sett = library.settings
-		local c1 = sett.BlendColor1
-		local c2 = sett.BlendColor2
-		sett.TitleBackColor = color_blend(c1,c2,0.025)
-		sett.ForegroundColor = color_blend(c1,c2,1)
-		sett.SlightColor = color_blend(c1,c2,0.16)
-		sett.BoxBackColor = color_blend(c1,c2,0.05)
-		sett.MainOpenColor = color_blend(c1,c2,0.065)
-		sett.SubOpenColor = color_blend(c1,c2,0.12)
-		sett.OutlineColor = color_blend(c1,c2,0.24)
-		sett.OpenColor = color_blend(c1,c2,0.15)
-		sett.CloseColor = color_blend(c1,c2,0.2)
-		sett.AccentColor = color_blend(c1,c2,0.4)
-		sett.InputColor = color_blend(c1,c2,0.9)
+local function setup_settings(settings)
+	if (settings) then
+		if (settings.BlendColor1 and settings.BlendColor2) then
+			local sett = library.settings
+			local c1 = settings.BlendColor1
+			local c2 = settings.BlendColor2
+			sett.TitleBackColor = color_blend(c1,c2,0.025)
+			sett.ForegroundColor = color_blend(c1,c2,1)
+			sett.SlightColor = color_blend(c1,c2,0.16)
+			sett.BoxBackColor = color_blend(c1,c2,0.05)
+			sett.MainOpenColor = color_blend(c1,c2,0.065)
+			sett.SubOpenColor = color_blend(c1,c2,0.12)
+			sett.OutlineColor = color_blend(c1,c2,0.325)
+			sett.OpenColor = color_blend(c1,c2,0.15)
+			sett.CloseColor = color_blend(c1,c2,0.2)
+			sett.AccentColor = color_blend(c1,c2,0.55)
+			sett.InputColor = color_blend(c1,c2,0.9)
+		end
+		for i,v in pairs(settings) do
+			library.settings[i] = v
+		end
 	end
 end
 
@@ -1669,8 +1674,7 @@ local UIToggle
 local UnlockMouse
 function library:Init(settings)
 
-    self.settings = settings or self.settings
-	setup_color_blend()
+	setup_settings(settings)
 	
 	self.base = self.base or self:Create("ScreenGui")
 	if syn and syn.protect_gui then
