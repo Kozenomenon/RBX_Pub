@@ -35,7 +35,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     MainOpenColor = Color3.fromRGB(0,22,22),
     SubOpenColor = Color3.fromRGB(0,45,45),
     OutlineColor = Color3.fromRGB(0,87,87),
-    OpenColor = Color3.fromRGB(0,43,43),
+    OpenColor = Color3.fromRGB(0,99,99),
     CloseColor = Color3.fromRGB(0,130,130),
     AccentColor = Color3.fromRGB(0,143,143),
 	InputColor = Color3.fromRGB(0,230,230),
