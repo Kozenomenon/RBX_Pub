@@ -35,7 +35,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     MainOpenColor = Color3.fromRGB(0,22,22),
     SubOpenColor = Color3.fromRGB(0,45,45),
     OutlineColor = Color3.fromRGB(0,87,87),
-    OpenColor = Color3.fromRGB(0,99,99),
+    OpenColor = Color3.fromRGB(0,135,135),
     CloseColor = Color3.fromRGB(0,130,130),
     AccentColor = Color3.fromRGB(0,143,143),
 	InputColor = Color3.fromRGB(0,230,230),
@@ -57,7 +57,7 @@ local function setup_settings(settings)
 			sett.MainOpenColor = color_blend(c1,c2,0.065)
 			sett.SubOpenColor = color_blend(c1,c2,0.14)
 			sett.OutlineColor = color_blend(c1,c2,0.325)
-			sett.OpenColor = color_blend(c1,c2,0.44)
+			sett.OpenColor = color_blend(c1,c2,0.56)
 			sett.CloseColor = color_blend(c1,c2,0.5)
 			sett.AccentColor = color_blend(c1,c2,0.55)
 			sett.InputColor = color_blend(c1,c2,0.9)
