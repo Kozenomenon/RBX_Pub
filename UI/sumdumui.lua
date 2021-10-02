@@ -584,7 +584,7 @@ local function createSlider(option, parent)
 		Size = UDim2.new(1, -20, 0, 5),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = library.settings.OpenColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -850,7 +850,7 @@ local function createList(option, parent, holder)
 		local label = library:Create("TextLabel", {
 			ZIndex = 3,
 			Size = UDim2.new(1, 0, 0, 40),
-			BackgroundColor3 = library.settings.OpenColor,
+			BackgroundColor3 = library.settings.BoxBackColor,
 			BorderSizePixel = 0,
 			Text = "    " .. value,
 			TextSize = library.settings.SmallFontSize,
@@ -1107,7 +1107,7 @@ local function createColorPickerWindow(option)
 		Position = UDim2.new(1 - hue, 0, 0, 0),
 		Size = UDim2.new(0, 2, 1, 0),
 		BackgroundTransparency = 1,
-		BackgroundColor3 = library.settings.OpenColor,
+		BackgroundColor3 = library.settings.BoxBackColor,
 		BorderColor3 = library.settings.ForegroundColor,
 		Parent = option.hue
 	})
@@ -1237,7 +1237,7 @@ local function createColorPickerWindow(option)
 			option:SetColor(originalColor)
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
+			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
@@ -1282,7 +1282,7 @@ local function createColorPickerWindow(option)
 			end
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
+			tweenService:Create(option.undoColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
@@ -1324,7 +1324,7 @@ local function createColorPickerWindow(option)
 			option:SetColor(currentColor)
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
+			tweenService:Create(option.setColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
@@ -1375,7 +1375,7 @@ local function createColorPickerWindow(option)
 			end
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.MainOpenColor}):Play()
+			tweenService:Create(option.rainbow, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
