@@ -1233,17 +1233,31 @@ local function createColorPickerWindow(option)
 	
 	option.resetColor.InputBegan:connect(function(Input)
 		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+			option.resetColor.clicking = true
+			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.AccentColor}):Play()
 			previousColors = {originalColor}
 			option:SetColor(originalColor)
 		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
+			option.resetColor.inContact = true
 			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
 		end
 	end)
 	
 	option.resetColor.InputEnded:connect(function(Input)
+		if Input.UserInputType == Enum.UserInputType.MouseButton1 and not rainbowEnabled then
+			option.resetColor.clicking = false
+			if option.resetColor.inContact then
+				tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.OutlineColor}):Play()
+			else
+				tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
+		end
 		if Input.UserInputType == Enum.UserInputType.MouseMovement and not dragging then
-			tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			option.resetColor.inContact = false
+			if not option.resetColor.clicking then
+				tweenService:Create(option.resetColor, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {ImageColor3 = library.settings.BoxBackColor}):Play()
+			end
 		end
 	end)
 	
