@@ -12,9 +12,9 @@ local function blend_value(v1: number,v2: number,perc: number)
 end
 local function color_blend(c1: Color3,c2: Color3,perc: number)
 	return Color3.fromRGB(
-		blend_value(c1.R,c2.R,perc),
-		blend_value(c1.G,c2.G,perc),
-		blend_value(c1.B,c2.B,perc)
+		blend_value(c1.R,c2.R,perc)*255,
+		blend_value(c1.G,c2.G,perc)*255,
+		blend_value(c1.B,c2.B,perc)*255
 	)
 end
 
