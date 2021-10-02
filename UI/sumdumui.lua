@@ -3,6 +3,21 @@
     i got it from: https://pastebin.com/raw/edJT9EGX
 ]]
 
+local function blend_value(v1: number,v2: number,perc: number)
+	if (v1 < v2) then
+		return v1 + (v2 - v1)*perc
+	else
+		return v2 + (v1 - v2)*perc
+	end
+end
+local function color_blend(c1: Color3,c2: Color3,perc: number)
+	return Color3.fromRGB(
+		blend_value(c1.R,c2.R,perc),
+		blend_value(c1.G,c2.G,perc),
+		blend_value(c1.B,c2.B,perc)
+	)
+end
+
 local library = {flags = {}, windows = {}, open = true, settings = {
     TitleFont = Enum.Font.GothamBold,
     NormalFont = Enum.Font.Gotham,
@@ -25,6 +40,24 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     WindowWidth = 300,
     
 }}
+
+local function setup_color_blend()
+	if (library.settings.BlendColor1 and library.settings.BlendColor2) then
+		local sett = library.settings
+		local c1 = sett.BlendColor1
+		local c2 = sett.BlendColor2
+		sett.TitleBackColor = color_blend(c1,c2,0.025)
+		sett.ForegroundColor = color_blend(c1,c2,1)
+		sett.SlightColor = color_blend(c1,c2,0.16)
+		sett.BoxBackColor = color_blend(c1,c2,0.05)
+		sett.MainOpenColor = color_blend(c1,c2,0.065)
+		sett.SubOpenColor = color_blend(c1,c2,0.12)
+		sett.OutlineColor = color_blend(c1,c2,0.24)
+		sett.OpenColor = color_blend(c1,c2,0.15)
+		sett.CloseColor = color_blend(c1,c2,0.2)
+		sett.AccentColor = color_blend(c1,c2,0.4)
+	end
+end
 
 --Services
 local runService = game:GetService"RunService"
@@ -1635,6 +1668,7 @@ local UnlockMouse
 function library:Init(settings)
 
     self.settings = settings or self.settings
+	setup_color_blend()
 	
 	self.base = self.base or self:Create("ScreenGui")
 	if syn and syn.protect_gui then
