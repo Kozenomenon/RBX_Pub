@@ -27,18 +27,18 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     SubFontSize = 16,
     InputFontSize = 15,
     SmallFontSize = 14,
-	WindowBackColor = Color3.fromRGB(0,33,33),
-    TitleBackColor = Color3.fromRGB(0,6,6),
+	WindowBackColor = Color3.fromRGB(0,40,40),
+    TitleBackColor = Color3.fromRGB(0,12,12),
     ForegroundColor = Color3.fromRGB(0,255,255),
-    SlightColor = Color3.fromRGB(0, 40, 40),
-    BoxBackColor = Color3.fromRGB(0,11,11),
-    MainOpenColor = Color3.fromRGB(0,12,12),
-    SubOpenColor = Color3.fromRGB(0,23,23),
-    OutlineColor = Color3.fromRGB(0,60,60),
-    OpenColor = Color3.fromRGB(0,30,30),
-    CloseColor = Color3.fromRGB(0,50,50),
-    AccentColor = Color3.fromRGB(0,100,100),
-	InputColor = Color3.fromRGB(0,235,235),
+    SlightColor = Color3.fromRGB(0, 48, 48),
+    BoxBackColor = Color3.fromRGB(0,18,18),
+    MainOpenColor = Color3.fromRGB(0,22,22),
+    SubOpenColor = Color3.fromRGB(0,45,45),
+    OutlineColor = Color3.fromRGB(0,87,87),
+    OpenColor = Color3.fromRGB(0,43,43),
+    CloseColor = Color3.fromRGB(0,130,130),
+    AccentColor = Color3.fromRGB(0,143,143),
+	InputColor = Color3.fromRGB(0,230,230),
     WindowWidth = 300,
     
 }}
@@ -49,16 +49,16 @@ local function setup_settings(settings)
 			local sett = library.settings
 			local c1 = settings.BlendColor1
 			local c2 = settings.BlendColor2
-			sett.WindowBackColor = color_blend(c1,c2,0.135)
+			sett.WindowBackColor = color_blend(c1,c2,0.13)
 			sett.TitleBackColor = color_blend(c1,c2,0.025)
 			sett.ForegroundColor = color_blend(c1,c2,1)
 			sett.SlightColor = color_blend(c1,c2,0.17)
 			sett.BoxBackColor = color_blend(c1,c2,0.05)
 			sett.MainOpenColor = color_blend(c1,c2,0.065)
-			sett.SubOpenColor = color_blend(c1,c2,0.155)
+			sett.SubOpenColor = color_blend(c1,c2,0.145)
 			sett.OutlineColor = color_blend(c1,c2,0.325)
 			sett.OpenColor = color_blend(c1,c2,0.15)
-			sett.CloseColor = color_blend(c1,c2,0.2)
+			sett.CloseColor = color_blend(c1,c2,0.5)
 			sett.AccentColor = color_blend(c1,c2,0.55)
 			sett.InputColor = color_blend(c1,c2,0.9)
 		end
