@@ -1,6 +1,33 @@
 --[[
     so i ripped this off from a pastebin and then tweaked it where i saw fit
     i got it from: https://pastebin.com/raw/edJT9EGX
+	- added settings, to be passed into library:Init(settings)
+	- settings for font, text size, colors, and window width 
+	use the lib like so: 
+
+	local uilib = loadstring(game:HttpGetAsync(<url>))()
+	local win = uilib:CreateWindow("My Cool UI")
+	local folder = win:AddFolder('stuff')
+	folder:AddToggle({text = "This is a toggle", callback = function(v) print(v) end})
+	folder:AddButton({text = 'button', callback = function() print('button clicked') end})
+	folder:AddSlider({text = 'slider', min = 1, max = 100, callback = function(v) print(v) end})
+	folder:AddList({text = 'option', values = {'yo', 'yes'}, callback = function(v) print(v) end})
+	folder:AddBox({text = 'text box', callback = function(v) print(v) end})
+	folder:AddColor({text = 'color', callback = function(v) print(v) end})
+	
+	uilib:Init({
+		TitleFont = Enum.Font.GothamBold,
+		NormalFont = Enum.Font.Gotham,
+		SpecialFont = Enum.Font.Code,
+		TitleFontSize = 17,
+		NormalFontSize = 17,
+		SubFontSize = 16,
+		InputFontSize = 15,
+		SmallFontSize = 14,
+		BlendColor1 = Color3.fromRGB(0,3,3), 
+		BlendColor2 = Color3.fromRGB(0,255,255),
+		WindowWidth = 300
+	})
 ]]
 
 local function blend_value(v1: number,v2: number,perc: number)
@@ -1745,7 +1772,7 @@ function library:Init(settings)
 		syn.protect_gui(self.base)
 	elseif get_hidden_gui then
 		get_hidden_gui(self.base)
-	else
+	elseif not gethui then
 		game:GetService"Players".LocalPlayer:Kick("Error: protect_gui function not found")
 		return
 	end
