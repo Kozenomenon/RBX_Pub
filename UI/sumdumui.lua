@@ -777,7 +777,7 @@ local function createList(option, parent, holder)
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageTransparency = 1,
-		ImageColor3 = library.settings.SlightColor,
+		ImageColor3 = library.settings.BoxBackColor,
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.02,
@@ -852,7 +852,7 @@ local function createList(option, parent, holder)
 		local label = library:Create("TextLabel", {
 			ZIndex = 3,
 			Size = UDim2.new(1, 0, 0, 40),
-			BackgroundColor3 = library.settings.BoxBackColor,
+			BackgroundColor3 = library.settings.SlightColor,
 			BorderSizePixel = 0,
 			Text = "    " .. value,
 			TextSize = library.settings.SmallFontSize,
@@ -882,12 +882,12 @@ local function createList(option, parent, holder)
 		label.InputEnded:connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				clicking = false
-				tweenService:Create(label, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = inContact and library.settings.OutlineColor or library.settings.BoxBackColor}):Play()
+				tweenService:Create(label, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = inContact and library.settings.OutlineColor or library.settings.SlightColor}):Play()
 			end
 			if input.UserInputType == Enum.UserInputType.MouseMovement then
 				inContact = false
 				if not clicking then
-					tweenService:Create(label, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = library.settings.BoxBackColor}):Play()
+					tweenService:Create(label, TweenInfo.new(0.1, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = library.settings.SlightColor}):Play()
 				end
 			end
 		end)
