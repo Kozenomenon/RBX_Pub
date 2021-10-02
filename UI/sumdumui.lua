@@ -27,6 +27,7 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     SubFontSize = 16,
     InputFontSize = 15,
     SmallFontSize = 14,
+	WindowBackColor = Color3.fromRGB(0,25,25),
     TitleBackColor = Color3.fromRGB(0,6,6),
     ForegroundColor = Color3.fromRGB(0,255,255),
     SlightColor = Color3.fromRGB(0, 40, 40),
@@ -48,6 +49,7 @@ local function setup_settings(settings)
 			local sett = library.settings
 			local c1 = settings.BlendColor1
 			local c2 = settings.BlendColor2
+			sett.WindowBackColor = color_blend(c1,c2,0.1)
 			sett.TitleBackColor = color_blend(c1,c2,0.025)
 			sett.ForegroundColor = color_blend(c1,c2,1)
 			sett.SlightColor = color_blend(c1,c2,0.16)
@@ -132,7 +134,7 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 		Size = UDim2.new(0, library.settings.WindowWidth, 0, size),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
-		ImageColor3 = library.settings.SlightColor, 
+		ImageColor3 = library.settings.WindowBackColor, 
 		ScaleType = Enum.ScaleType.Slice,
 		SliceCenter = Rect.new(100, 100, 100, 100),
 		SliceScale = 0.04,
@@ -1753,7 +1755,7 @@ function library:Init(settings)
 		ZIndex = 100,
 		AnchorPoint = Vector2.new(0, 0),
 		Size = UDim2.new(0, 5, 0, 5),
-		BackgroundColor3 = self.settings.ForegroundColor, -- library.settings.ForegroundColor,
+		BackgroundColor3 = Color3.fromRGB(255,255,255),
 		Parent = self.base
 	})
 	
