@@ -67,7 +67,18 @@ local library = {flags = {}, windows = {}, open = true, settings = {
     AccentColor = Color3.fromRGB(0,143,143),
 	InputColor = Color3.fromRGB(0,230,230),
     WindowWidth = 300,
-    
+    Padding = {
+		Top = UDim.new(0,0),
+		Right = UDim.new(0,0),
+		Bottom = UDim.new(0,0),
+		Left = UDim.new(0,0)
+	},
+	SubPadding = {
+		Top = UDim.new(0,0),
+		Right = UDim.new(0,0),
+		Bottom = UDim.new(0,0),
+		Left = UDim.new(0,0)
+	}
 }}
 
 local function setup_settings(settings)
@@ -232,15 +243,15 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 		parentTable.main.Size = #parentTable.options > 0 and parentTable.open and UDim2.new(0, library.settings.WindowWidth, 0, layout.AbsoluteContentSize.Y + size) or UDim2.new(0, library.settings.WindowWidth, 0, size)
 	end)
 	
-	if not subHolder then
-		library:Create("UIPadding", {
-			PaddingTop = UDim.new(0,0),
-			PaddingRight = UDim.new(0,10),
-			PaddingBottom = UDim.new(0,0),
-			PaddingLeft = UDim.new(0,10),
-			Parent = parentTable.content
-		})
-		
+	library:Create("UIPadding", {
+		PaddingTop = (subHolder and library.settings.SubPadding and library.settings.SubPadding.Top) or (library.settings.Padding and library.settings.Padding.Top) or UDim.new(0,0),
+		PaddingRight = (subHolder and library.settings.SubPadding and library.settings.SubPadding.Right) or (library.settings.Padding and library.settings.Padding.Right) or UDim.new(0,0),
+		PaddingBottom = (subHolder and library.settings.SubPadding and library.settings.SubPadding.Bottom) or (library.settings.Padding and library.settings.Padding.Bottom) or UDim.new(0,0),
+		PaddingLeft = (subHolder and library.settings.SubPadding and library.settings.SubPadding.Left) or (library.settings.Padding and library.settings.Padding.Left) or UDim.new(0,0),
+		Parent = parentTable.content
+	})
+
+	if not subHolder then		
 		title.InputBegan:connect(function(input)
 			if input.UserInputType == Enum.UserInputType.MouseButton1 then
 				dragObject = parentTable.main
