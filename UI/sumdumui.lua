@@ -165,11 +165,13 @@ function library:Create(class, properties)
 end
 
 local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
-	local size = subHolder and 34 or 40
+	local size = subHolder and (2.125*library.settings.SubFontSize) or (2.3529411*library.settings.TitleFontSize)
+	local width = (parent.UIPadding and parent.AbsoluteSize.X - parent.UIPadding.PaddingLeft - parent.UIPadding.PaddingRight) or UDim.new(0,library.settings.WindowWidth)
+	local height = (parent.UIPadding and parent.AbsoluteSize.Y - parent.UIPadding.PaddingTop - parent.UIPadding.PaddingBottom) or UDim.new(0,size)
 	parentTable.main = library:Create("ImageButton", {
 		LayoutOrder = subHolder and parentTable.position or 0,
-		Position = UDim2.new(0, 20 + (250 * (parentTable.position or 0)), 0, 20),
-		Size = UDim2.new(0, library.settings.WindowWidth, 0, size),
+		Position = UDim2.new(0, 20 + ((library.settings.WindowWidth+20) * (parentTable.position or 0)), 0, 20),
+		Size = UDim2.new(width,height),
 		BackgroundTransparency = 1,
 		Image = "rbxassetid://3570695787",
 		ImageColor3 = library.settings.WindowBackColor, 
