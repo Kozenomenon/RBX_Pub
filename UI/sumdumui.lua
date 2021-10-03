@@ -234,10 +234,10 @@ local function createOptionHolder(holderTitle, parent, parentTable, subHolder)
 	
 	if not subHolder then
 		library:Create("UIPadding", {
-			PaddingTop = 0,
-			PaddingRight = 10,
-			PaddingBottom = 0,
-			PaddingLeft = 10,
+			PaddingTop = UDim.new(0,0),
+			PaddingRight = UDim.new(0,10),
+			PaddingBottom = UDim.new(0,0),
+			PaddingLeft = UDim.new(0,10),
 			Parent = parentTable.content
 		})
 		
