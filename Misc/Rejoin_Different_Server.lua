@@ -8,7 +8,7 @@
 		-- or call the func pass in different values
 		rj(5,0.5,30,true,false)
 		-- or you may want use coroutine so rest of your script keeps going until it works
-		coroutine.wrap(rj())
+		coroutine.wrap(rj)()
 ]]
 local LoopRetryDelaySeconds = 10
 local DelaySeconds = 1
