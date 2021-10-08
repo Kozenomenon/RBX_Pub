@@ -11,6 +11,7 @@
 		coroutine.wrap(rj)()
 ]]
 local LoopRetryDelaySeconds = 10
+local MaxLoopsThenDoTPSame = 5
 local DelaySeconds = 1
 local ServerListLimit = 100
 local SkipPlayerKick = false
@@ -94,7 +95,7 @@ function RejoinNewServer(teleportDelay: number,serverLimit: number,skipKick: boo
 	end
 end
  
-return function(loopRetrySeconds: number,tpDelaySeconds: number,svrListLimit: number,skipKick: boolean,tpSameSvrOnReqFail: boolean)
+return function(loopRetrySeconds: number,tpDelaySeconds: number,svrListLimit: number,skipKick: boolean,tpSameSvrOnReqFail: boolean, maxLoops: number)
 	LoopRetryDelaySeconds = loopRetrySeconds or LoopRetryDelaySeconds
 	DelaySeconds = tpDelaySeconds or DelaySeconds
 	ServerListLimit = svrListLimit or ServerListLimit
@@ -104,8 +105,15 @@ return function(loopRetrySeconds: number,tpDelaySeconds: number,svrListLimit: nu
 	if tpSameSvrOnReqFail~=nil then
 		TeleportSameServerIfRequestFails = tpSameSvrOnReqFail
 	end
-	-- will keep trying every X seconds until it works. edit values at top
-	while not RejoinNewServer(DelaySeconds,ServerListLimit,SkipPlayerKick,TeleportSameServerIfRequestFails) do 
+	MaxLoopsThenDoTPSame = maxLoops or MaxLoopsThenDoTPSame
+	local attempts = 0
+	while attempts < MaxLoopsThenDoTPSame do 
+		RejoinNewServer(DelaySeconds,ServerListLimit,SkipPlayerKick,TeleportSameServerIfRequestFails)
 		wait(LoopRetryDelaySeconds) 
+		attempts = attempts + 1
+	end
+	while wait(LoopRetryDelaySeconds) do
+		-- if we get here then just try normal TP
+		game:GetService('TeleportService'):Teleport(game.PlaceId)
 	end
 end
