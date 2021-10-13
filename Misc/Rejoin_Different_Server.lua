@@ -2,7 +2,7 @@
 	KoZ Rejoin Different Server Script
 	Changed to be a module so I can just loadstring this for my own scripts like so: 
 		-- load it to local var. returns func
-		local rj = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Different_Server.lua"))
+		local rj = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Different_Server.lua"))()
 		-- call the func w/ defaults
 		rj()
 		-- or call the func pass in different values
