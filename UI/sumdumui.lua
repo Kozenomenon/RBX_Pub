@@ -1,12 +1,15 @@
 --[[
-    so i ripped this off from a pastebin and then tweaked it where i saw fit
-    i got it from: https://pastebin.com/raw/edJT9EGX
-	- added settings, to be passed into library:Init(settings)
-	- settings for font, text size, colors, and window width 
-	use the lib like so: 
+	sumdumui by KoZ
 
+	this is a fork of a ui lib i found some other scripts to be using. 
+	i wanted to be able to configure some things like colors and padding..
+	so i made this.
+
+	use the lib like so: 
+-----------------------------------------------------------------------------
 	local uilib = loadstring(game:HttpGetAsync(<url>))()
 	local win = uilib:CreateWindow("My Cool UI")
+	
 	local folder = win:AddFolder('stuff')
 	folder:AddToggle({text = "This is a toggle", callback = function(v) print(v) end})
 	folder:AddButton({text = 'button', callback = function() print('button clicked') end})
@@ -14,6 +17,16 @@
 	folder:AddList({text = 'option', values = {'yo', 'yes'}, callback = function(v) print(v) end})
 	folder:AddBox({text = 'text box', callback = function(v) print(v) end})
 	folder:AddColor({text = 'color', callback = function(v) print(v) end})
+	
+	win:AddSwitcher({text = 'switcher1', values = {'some option', 'another yay','wut dis','hrrdrr','ok ok i git it'}, callback = function(v) print(v) end})
+
+	local bindOption1 = win:AddBind({text = "Bind 1",key = "M",toggle=true, 
+	callback = function(state) 
+		print(bindOption1.flag,state,uilib.flags[bindOption1.flag]) 
+	end,
+	bindcallback = function()
+		print(bindOption1.bindflag,uilib.flags[bindOption1.bindflag])
+	end})
 	
 	uilib:Init({
 		TitleFont = Enum.Font.GothamBold,
@@ -26,8 +39,56 @@
 		SmallFontSize = 14,
 		BlendColor1 = Color3.fromRGB(0,3,3), 
 		BlendColor2 = Color3.fromRGB(0,255,255),
-		WindowWidth = 300
+		WindowWidth = 300,
+		Padding = {
+			Top = 5,
+			Right = 10,
+			Bottom = 5,
+			Left = 10
+		}
 	})
+-----------------------------------------------------------------------------
+	or other init settings...
+	WindowBackColor = Color3.fromRGB(0,40,40),
+	TitleBackColor = Color3.fromRGB(0,12,12),
+	ForegroundColor = Color3.fromRGB(0,255,255),
+	SlightColor = Color3.fromRGB(0, 48, 48),
+	BoxBackColor = Color3.fromRGB(0,18,18),
+	MainOpenColor = Color3.fromRGB(0,22,22),
+	SubOpenColor = Color3.fromRGB(0,45,45),
+	OutlineColor = Color3.fromRGB(0,87,87),
+	OpenColor = Color3.fromRGB(0,135,135),
+	CloseColor = Color3.fromRGB(0,130,130),
+	AccentColor = Color3.fromRGB(0,143,143),
+	InputColor = Color3.fromRGB(0,230,230),
+	WindowBackColor_BlendRate = 0.13,
+	TitleBackColor_BlendRate = 0.025,
+	ForegroundColor_BlendRate = 1,
+	SlightColor_BlendRate = 0.185,
+	BoxBackColor_BlendRate = 0.05,
+	MainOpenColor_BlendRate = 0.065,
+	SubOpenColor_BlendRate = 0.14,
+	OutlineColor_BlendRate = 0.325,
+	OpenColor_BlendRate = 0.56,
+	CloseColor_BlendRate = 0.5,
+	AccentColor_BlendRate = 0.55,
+	InputColor_BlendRate = 0.9,
+	BlendColors = {
+		{
+			BlendColor = Color3.fromRGB(0,0,0)
+		},
+		{
+			BlendColor = Color3.fromRGB(0,0,44)
+		},
+		{
+			BlendColor = Color3.fromRGB(66,6,22),
+			--BlendChannels = Color3.new(0.5,0.75,0.25)
+		},
+		{
+			BlendColor = Color3.fromRGB(222, 222, 222),
+			--BlendChannels = Color3.new(1,0.33,0.77)
+		}
+	},
 ]]
 
 --[[
@@ -2227,6 +2288,7 @@ function library:Init(settings)
 							cnt = cnt-1
 						end
 					end
+					return cnt
 				end)
 				if succ_dc and dc and type(dc)=="number" and dc==0 then
 					guiPar = gethui()
