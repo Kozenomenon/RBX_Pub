@@ -20,7 +20,8 @@
 	
 	win:AddSwitcher({text = 'switcher1', values = {'some option', 'another yay','wut dis','hrrdrr','ok ok i git it'}, callback = function(v) print(v) end})
 
-	local bindOption1 = win:AddBind({text = "Bind 1",key = "M",toggle=true, 
+	-- all have 'flag' for when value/state changes. binds can also have 'bindflag' if 'toggle' is true. so they are like a bind and toggle in one control. 
+	bindOption1 = win:AddBind({text = "Bind 1",key = "M",toggle=true, flag="bind1_state", bindflag="bind1_key",
 	callback = function(state) 
 		print(bindOption1.flag,state,uilib.flags[bindOption1.flag]) 
 	end,
