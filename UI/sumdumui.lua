@@ -7,7 +7,7 @@
 
 	use the lib like so: 
 -----------------------------------------------------------------------------
-	local uilib = loadstring(game:HttpGetAsync(<url>))()
+	local uilib = loadstring(game:HttpGetAsync('https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/UI/sumdumui.lua'))()
 	local win = uilib:CreateWindow("My Cool UI")
 	
 	local folder = win:AddFolder('stuff')
