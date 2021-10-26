@@ -6,7 +6,16 @@
 	When counts match secondary sort uses fps and ping.
 
 	-- to call this from github source
-	loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Preferred_Server.lua"))()
+	local rejoinPreferred = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Preferred_Server.lua"))
+	rejoinPreferred({
+		SizeSort = "asc",
+		MinPlayers = 0,
+		MaxPlayers = 0,
+		ExcludeFull = true,
+		ExcludeSame = true,
+		MinFps = 55,
+		MaxPing = 190
+	})
 
 ]]
 
@@ -45,7 +54,7 @@ local verbose = false -- setting to true will print a lot
 local prnt_prefix_time = false -- prefixes all prints with current time
 
 -- some funcs used you can change if you like (dont if you dunno wut doin)
-local prnt = rconsoleprint or printconsole or output or print
+local prnt = print--rconsoleprint or printconsole or output or print
 local pcll = pcall
 local req = (syn or http or {}).request or http_request or request -- should handle most exploits worth using
 local jsondecode = function(a) return game:GetService("HttpService"):JSONDecode(a) end
@@ -119,7 +128,7 @@ function GetAllServersForPlace(placeId: number)
 								playing			number | how many players playing right now
 								playerTokens	array of string (tokens) | the tokens of the players playing right now
 								fps				number | server's current frames per second for execution
-								ping			number | your ping with this server
+								ping			number | the ping with this server
 							]]
 							if (min_p>0 and v.playing<min_p) or 					-- filter min players
 							   (max_p>0 and v.playing>max_p) or 					-- filter max players
@@ -162,57 +171,70 @@ function GetAllServersForPlace(placeId: number)
 	return servers,maxPlayers,maxFps,maxPing
 end
 
-if prnt==rconsoleprint then
-	if not syn then rconsolecreate() end -- noticed SW needs this
-	if rconsoleclear then rconsoleclear() end
-end
+function RejoinPreferredServer(preferences)
 
-prefer = prefer or {}
-Prnt("******************************************************")
-Prnt("Rejoin Preferred Server by KoZ")
-Prnt("******************************************************")
-Prnt("Prefer:",TableToString(prefer," | ",true))
-Prnt("------------------------------------------------------")
-local allSvrs,maxPlayers,maxFps,maxPing = GetAllServersForPlace(game.PlaceId)
-Prnt("Servers Found for PlaceId",game.PlaceId,"NumSvrs",allSvrs and #allSvrs,"Time",tick()-tm)
-if allSvrs and #allSvrs>0 then
-	local sortTm = tick()
-	local sort = prefer.SizeSort and type(prefer.SizeSort)=="string" and prefer.SizeSort or "asc" -- size sort prefer small or large
-	local sort_desc = sort:lower()=="desc"
-	local fps_wgt = prefer.FpsSortWeight and type(prefer.FpsSortWeight)=="number" and math.clamp(prefer.FpsSortWeight,0.01,1000) or 0.01 -- fps wgt
-	local png_wgt = prefer.PingSortWeight and type(prefer.PingSortWeight)=="number" and math.clamp(prefer.PingSortWeight,0.01,1000) or 0.01 -- ping wgt
-	local size_wgt = prefer.SizeSortWeight and type(prefer.SizeSortWeight)=="number" and math.clamp(prefer.SizeSortWeight,0.01,1000) or 0.01 -- size wgt
-	function sortWeight(svr)
-		local sz_wgt
-		if sort_desc then
-			sz_wgt = svr.playing/maxPlayers*size_wgt
-		else
-			sz_wgt = (1-svr.playing/maxPlayers)*size_wgt
+	if preferences and type(preferences)=="table" then
+		for i,v in pairs(preferences) do
+			if prefer[i] and type(prefer[i])==type(v) then
+				prefer[i] = v
+			end
 		end
-		return sz_wgt+svr.fps/maxFps*fps_wgt+(1-svr.ping/maxPing)*png_wgt
 	end
-	table.sort(allSvrs,function(a,b)
-		local a_w = sortWeight(a)
-		local b_w = sortWeight(b)
-		if a_w>b_w then return true
-		elseif a_w==b_w then
-			return a.origord<b.origord
-		else
-			return false
-		end
-	end)
 
-	if verbose then
+	if prnt==rconsoleprint then
+		if not syn then rconsolecreate() end -- noticed SW needs this
+		if rconsoleclear then rconsoleclear() end
+	end
+
+	prefer = prefer or {}
+	Prnt("******************************************************")
+	Prnt("Rejoin Preferred Server by KoZ")
+	Prnt("******************************************************")
+	Prnt("Prefer:",TableToString(prefer," | ",true))
+	Prnt("------------------------------------------------------")
+	local allSvrs,maxPlayers,maxFps,maxPing = GetAllServersForPlace(game.PlaceId)
+	Prnt("Servers Found for PlaceId",game.PlaceId,"NumSvrs",allSvrs and #allSvrs,"Time",tick()-tm)
+	if allSvrs and #allSvrs>0 then
+		local sortTm = tick()
+		local sort = prefer.SizeSort and type(prefer.SizeSort)=="string" and prefer.SizeSort or "asc" -- size sort prefer small or large
+		local sort_desc = sort:lower()=="desc"
+		local fps_wgt = prefer.FpsSortWeight and type(prefer.FpsSortWeight)=="number" and math.clamp(prefer.FpsSortWeight,0.01,1000) or 0.01 -- fps wgt
+		local png_wgt = prefer.PingSortWeight and type(prefer.PingSortWeight)=="number" and math.clamp(prefer.PingSortWeight,0.01,1000) or 0.01 -- ping wgt
+		local size_wgt = prefer.SizeSortWeight and type(prefer.SizeSortWeight)=="number" and math.clamp(prefer.SizeSortWeight,0.01,1000) or 0.01 -- size wgt
+		function sortWeight(svr)
+			local sz_wgt
+			if sort_desc then
+				sz_wgt = svr.playing/maxPlayers*size_wgt
+			else
+				sz_wgt = (1-svr.playing/maxPlayers)*size_wgt
+			end
+			return sz_wgt+svr.fps/maxFps*fps_wgt+(1-svr.ping/maxPing)*png_wgt
+		end
+		table.sort(allSvrs,function(a,b)
+			local a_w = sortWeight(a)
+			local b_w = sortWeight(b)
+			if a_w>b_w then return true
+			elseif a_w==b_w then
+				return a.origord<b.origord
+			else
+				return false
+			end
+		end)
+
+		if verbose then
+			for i,v in ipairs(allSvrs) do
+				Prnt("SORT",i,v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping)
+			end
+		end
+
+		Prnt("Sort Time",tick()-sortTm)
 		for i,v in ipairs(allSvrs) do
-			Prnt("SORT",i,v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping)
+			Prnt("Preferred: ",v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping)
+			Prnt("Teleporting...")
+			game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId,v.id)
+			task.wait(10)
 		end
 	end
-
-	Prnt("Sort Time",tick()-sortTm)
-	for i,v in ipairs(allSvrs) do
-		Prnt("Preferred: ",v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping)
-		Prnt("Teleporting...")
-		game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId,v.id)
-		task.wait(10)
-	end
 end
+
+RejoinPreferredServer(...)
