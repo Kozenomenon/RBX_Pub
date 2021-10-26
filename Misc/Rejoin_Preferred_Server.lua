@@ -195,9 +195,7 @@ local function RejoinPreferredServer(preferences)
 	prefer = prefer or {}
 	if preferences and type(preferences)=="table" then
 		for i,v in pairs(preferences) do
-			if prefer[i] and type(prefer[i])==type(v) then
-				prefer[i] = v
-			end
+			prefer[i] = v
 		end
 	end
 	verbose = prefer.PrintVerbose
