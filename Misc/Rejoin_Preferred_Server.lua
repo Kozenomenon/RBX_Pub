@@ -5,10 +5,9 @@
 	Primary sort is by player count, smallest or largest preferred.
 	When counts match secondary sort uses fps and ping.
 
-	-- load it to local var. returns func
-	local rj = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Preferred_Server.lua"))()
-	-- call the func w/ defaults
-	rj()
+	-- to call this from github source
+	loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Preferred_Server.lua"))()
+
 ]]
 
 -- settings you can adjust
