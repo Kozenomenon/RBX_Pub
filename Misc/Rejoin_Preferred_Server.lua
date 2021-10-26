@@ -2,55 +2,30 @@
 	Rejoin Preferred Server Script by Kozenomenon#0001
 
 	Settings allow you to define your preferences for finding a server to rejoin to.
-	Primary sort is by player count, smallest or largest preferred.
-	When counts match secondary sort uses fps and ping.
+	Sort is weighted using num of players, fps, and ping. Num of players goes by the 'SizeSort' setting: asc/desc.
+	Example call using default values shown below.
 
 	-- to call this from github source
 	local rejoinPreferred = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/Kozenomenon/RBX_Pub/main/Misc/Rejoin_Preferred_Server.lua"))
 	rejoinPreferred({
-		SizeSort = "asc",
-		MinPlayers = 0,
-		MaxPlayers = 0,
-		ExcludeFull = true,
-		ExcludeSame = true,
-		MinFps = 55,
-		MaxPing = 190
+		SizeSort = "asc",		-- 'asc' or 'desc' - asc will prefer smallest, desc will prefer largest (num players). default is asc.
+		MinPlayers = 0,			-- 0 is unused, >0 will filter servers with less players than this number
+		MaxPlayers = 0,			-- 0 is unused, >0 will filter servers with more players than this number
+		ExcludeFull = true,		-- will filter any servers that are full (at server's max players)
+		ExcludeSame = true,		-- will filter the current server- to ensure you go someplace else
+		MinFps = 55,			-- 0 is unused, >0 will filter any servers that do not have at least this FPS
+		MaxPing = 190,			-- 0 is unused, >0 will filter any servers whose ping is higher than this
+		-- don't mess with these unless you understand what a weighted sort is
+		FpsSortWeight = 1,		-- weight to apply to fps for sorting. higher value makes better (higher) fps impact sort more
+		PingSortWeight = 1,		-- weight to apply to ping for sorting. higher value makes better (lower) ping impact sort more
+		SizeSortWeight = 5,		-- weight for size (num players) for sorting. higher value makes preferred size (asc/desc) impact sort more
+		-- you probably don't need these
+		PrintVerbose = false,			-- if true will output much more, including full server list sorted
+		PrintPrefixTime = false,		-- if true will prefix all prints with time hh:mm:ss.SSS
+		PrintUseConsoleWindow = false	-- if true will use a separate console window for all print output (if exploit can do that, or falls back to print)
 	})
 
 ]]
-
--- settings you can adjust
-local prefer = {
-	SizeSort = "asc",		-- 'asc' or 'desc' - asc will prefer smallest, desc will prefer largest (current players)
-	MinPlayers = 0,			-- 0 is unused, >0 will filter out servers with less players than this number
-	MaxPlayers = 0,			-- 0 is unused, >0 will filter out servers with more players than this number
-	ExcludeFull = true,		-- will filter out any servers that are full (at server's max players)
-	ExcludeSame = true,		-- will filter out the current server
-	MinFps = 55,			-- 0 is unused, >0 will filter any servers that do not have at least this FPS
-	MaxPing = 190,			-- 0 is unused, >0 will filter any servers whose ping is higher than this
-
-	--[[
-		Sort Control
-		Can change the weight of the sorting for size (players), fps, and ping
-		Higher weights will give more preference during sorting.
-		Set to 0 to remove a value from sort consideration.
-			- Higher FPS is better FPS / Lower Ping is Better Ping
-			- Size Pref depends on 'SizeSort' field above
-	]]
-	FpsSortWeight = 1,
-	PingSortWeight = 1,
-	SizeSortWeight = 5,
-
-	--[[
-		Other settings not usually needed
-	]]
-	PrintVerbose = false,
-	PrintPrefixTime = false,
-	PrintUseConsoleWindow = false
-}
-
-
-
 
 
 
@@ -62,30 +37,15 @@ local prefer = {
 *************************************************************************************************************************]]
 
 
-
-
-
-local verbose = false -- setting to true will print a lot
-local prnt_prefix_time = false -- prefixes all prints with current time
-
 -- some funcs used you can change if you like (dont if you dunno wut doin)
-local prnt = print--rconsoleprint or printconsole or output or print
+local prnt = print--rconsoleprint or printconsole or output or print / changed this here so the preferences can set this
 local pcll = pcall
 local req = (syn or http or {}).request or http_request or request -- should handle most exploits worth using
 local jsondecode = function(a) return game:GetService("HttpService"):JSONDecode(a) end
 
-local prnt_add_nl = prnt==rconsoleprint or prnt==output
 local locale
-
-local tm = tick()
-
--- rbx games api info here: https://games.roblox.com/docs#!/Games/get_v1_games_placeId_servers_serverType
-local rbx_games_url_frmt = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100%s"
-local cursor_frmt = "&cursor=%s"
-
 local function TimeString()
-	locale = locale or game:GetService("LocalizationService").RobloxLocaleId
-	return DateTime.now():FormatLocalTime("hh:mm:ss.SSS", locale)
+	return DateTime.now():FormatLocalTime("hh:mm:ss.SSS", locale or "en-us")
 end
 local function TableToString(tbl: table,delimit: string,includeNames: boolean) -- cuz table.concat doesn't tostring for you
 	tbl = tbl or {}
@@ -99,14 +59,15 @@ local function TableToString(tbl: table,delimit: string,includeNames: boolean) -
 	end
 	return txt or ""
 end
+local prnt_pref_time
 local function Prnt(...)
 	local args = {...}
-	local txt = (prnt_prefix_time and (TimeString()..": ") or "")..TableToString(args," | ")
-	prnt(prnt_add_nl and txt:sub(#txt)~="\n" and (txt .. "\n") or txt) -- cuz rconsoleprint/output don't put newline at end
+	local txt = (prnt_pref_time and (TimeString()..": ") or "")..TableToString(args," | ")
+	prnt((prnt==rconsoleprint or prnt==output) and txt:sub(#txt)~="\n" and (txt .. "\n") or txt) -- cuz rconsoleprint/output don't put newline at end
 end
 
-local function GetAllServersForPlace(placeId: number)
-	prefer = prefer or {}
+local function GetAllServersForPlace(placeId: number,pref: table)
+	pref = pref or {}
 	local servers = {} -- to hold the server data as we go
 	local cont = true
 	local cursor -- for paging the requests, can only get 100 at a time..
@@ -114,10 +75,15 @@ local function GetAllServersForPlace(placeId: number)
 	local min_p,max_p,min_f,max_png
 	local maxPlayers,maxFps,maxPing = 0,0,0
 	local function numOrDefZero(val) return val and type(val)=="number" and val>0 and val or 0 end
-	min_p = numOrDefZero(prefer.MinPlayers)
-	max_p = numOrDefZero(prefer.MaxPlayers)
-	min_f = numOrDefZero(prefer.MinFps)
-	max_png = numOrDefZero(prefer.MaxPing)
+	min_p = numOrDefZero(pref.MinPlayers)
+	max_p = numOrDefZero(pref.MaxPlayers)
+	min_f = numOrDefZero(pref.MinFps)
+	max_png = numOrDefZero(pref.MaxPing)
+
+	-- rbx games api info here: https://games.roblox.com/docs#!/Games/get_v1_games_placeId_servers_serverType
+	local rbx_games_url_frmt = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100%s"
+	local cursor_frmt = "&cursor=%s"
+
 	while cont do
 		cont = false -- default to discontinue the loop, will only flip to true if we get a next page cursor
 		local url = rbx_games_url_frmt:format(tostring(placeId),cursor and cursor_frmt:format(tostring(cursor)) or "")
@@ -135,7 +101,7 @@ local function GetAllServersForPlace(placeId: number)
 				cursor = jsn.nextPageCursor or nil
 				if jsn.data then
 					cnt = cnt + 1
-					if verbose then 
+					if pref.PrintVerbose then 
 						Prnt("Call#",cnt,"NumSvrs_Before",#servers,"Url",url)
 					end
 					for i,v in pairs(jsn.data) do
@@ -150,8 +116,8 @@ local function GetAllServersForPlace(placeId: number)
 							]]
 							if (min_p>0 and v.playing<min_p) or 					-- filter min players
 							   (max_p>0 and v.playing>max_p) or 					-- filter max players
-							   (prefer.ExcludeFull and v.playing==v.maxPlayers) or 	-- filter full svr
-							   (prefer.ExcludeSame and v.id==game.JobId) or			-- filter same svr
+							   (pref.ExcludeFull and v.playing==v.maxPlayers) or 	-- filter full svr
+							   (pref.ExcludeSame and v.id==game.JobId) or			-- filter same svr
 							   (min_f>0 and v.fps and v.fps<min_f) or 				-- filter min fps
 							   (max_png>0 and v.ping and v.ping>max_png)			-- filter max ping
 							   then continue end
@@ -163,7 +129,7 @@ local function GetAllServersForPlace(placeId: number)
 							table.insert(servers,v)
 						end
 					end
-					if verbose then 
+					if pref.PrintVerbose then 
 						Prnt("Call#",cnt,"NumSvrs_After",#servers)
 					end
 				end
@@ -192,14 +158,28 @@ end
 
 local function RejoinPreferredServer(preferences)
 
-	prefer = prefer or {}
+	local tm = tick()
+
+	local prefer = {
+		SizeSort = "asc",
+		MinPlayers = 0,
+		MaxPlayers = 0,
+		ExcludeFull = true,
+		ExcludeSame = true,
+		MinFps = 55,
+		MaxPing = 190,
+		FpsSortWeight = 1,
+		PingSortWeight = 1,
+		SizeSortWeight = 5,
+		PrintVerbose = false,
+		PrintPrefixTime = false,
+		PrintUseConsoleWindow = false
+	}
 	if preferences and type(preferences)=="table" then
 		for i,v in pairs(preferences) do
 			prefer[i] = v
 		end
 	end
-	verbose = prefer.PrintVerbose
-	prnt_prefix_time = prefer.PrintPrefixTime
 	if prefer.PrintUseConsoleWindow then 
 		prnt = rconsoleprint or output or printconsole or print
 	end
@@ -209,6 +189,10 @@ local function RejoinPreferredServer(preferences)
 		if rconsoleclear then rconsoleclear() end
 	end
 
+	if prefer.PrintPrefixTime then
+		locale = game:GetService("LocalizationService").RobloxLocaleId
+		prnt_pref_time = true
+	end
 	
 	Prnt("******************************************************")
 	Prnt("Rejoin Preferred Server by KoZ")
@@ -218,7 +202,7 @@ local function RejoinPreferredServer(preferences)
 	Prnt("Current PlaceId",game.PlaceId)
 	Prnt("Current (Job)ServerId",game.JobId)
 	-- get the servers but also the max plyrs,fps,& ping to use in sort weight math
-	local allSvrs,maxPlayers,maxFps,maxPing = GetAllServersForPlace(game.PlaceId)
+	local allSvrs,maxPlayers,maxFps,maxPing = GetAllServersForPlace(game.PlaceId,prefer)
 	Prnt("Servers Found for PlaceId",game.PlaceId,"NumSvrs",allSvrs and #allSvrs or 0,"Time",tostring(tick()-tm):sub(1,6))
 	if allSvrs and #allSvrs>0 then
 		local sortTm = tick()
@@ -248,13 +232,13 @@ local function RejoinPreferredServer(preferences)
 			end
 		end)
 
-		if verbose then
+		if prefer.PrintVerbose then
 			for i,v in ipairs(allSvrs) do
-				Prnt("SORT",i,v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping) -- if verbose dump out full sort order results for all servers found
+				Prnt("SORT",i,v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping) -- if prefer.PrintVerbose dump out full sort order results for all servers found
 			end
 		end
 
-		if verbose then Prnt("Sort Time",tick()-sortTm) end
+		if prefer.PrintVerbose then Prnt("Sort Time",tick()-sortTm) end
 		for i,v in ipairs(allSvrs) do
 			Prnt(("Preferred #%s"):format(tostring(i)),v.id,("playing %s/%s"):format(tostring(v.playing),tostring(maxPlayers)),"fps",tostring(v.fps):sub(1,5),"ping",v.ping)
 			Prnt("Teleporting...")
