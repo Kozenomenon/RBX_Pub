@@ -227,12 +227,12 @@ function RejoinPreferredServer(preferences)
 			end
 		end
 
-		Prnt("Sort Time",tick()-sortTm)
+		if verbose then Prnt("Sort Time",tick()-sortTm) end
 		for i,v in ipairs(allSvrs) do
-			Prnt("Preferred: ",v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping)
+			Prnt(("Preferred #%s"):format(tostring(i)),v.id,("playing %s/%s"):format(tostring(v.playing),tostring(maxPlayers)),"fps",tostring(v.fps):sub(1,5),"ping",v.ping)
 			Prnt("Teleporting...")
 			game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId,v.id)
-			task.wait(10)
+			task.wait(10) -- keep trying in case we fail to teleport to preferred, get next and so on
 		end
 	end
 end
