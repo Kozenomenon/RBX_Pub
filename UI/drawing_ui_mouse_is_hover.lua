@@ -180,8 +180,10 @@ end
 -- function makes creating drawing little cleaner
 function MakeDraw(obj, props)
 	local tmpObj
-	if (Drawing and obj and props and type(props) == "table") then
+	if (Drawing and obj and type(obj)=="string" and props and type(props) == "table") then
 		tmpObj = Drawing.new(obj)
+		local mt = getmetatable(tmpObj)
+		if not mt.__type then mt.__type = obj end
 		for i, v in next, props do
 			tmpObj[i] = v
 		end
