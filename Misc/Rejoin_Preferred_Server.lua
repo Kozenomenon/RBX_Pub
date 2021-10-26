@@ -68,13 +68,15 @@ local tm = tick()
 local rbx_games_url_frmt = "https://games.roblox.com/v1/games/%s/servers/Public?sortOrder=Asc&limit=100%s"
 local cursor_frmt = "&cursor=%s"
 
-function TimeString()
+local function TimeString()
 	locale = locale or game:GetService("LocalizationService").RobloxLocaleId
 	return DateTime.now():FormatLocalTime("hh:mm:ss.SSS", locale)
 end
-function TableToString(tbl: table,delimit: string,includeNames: boolean) -- cuz table.concat doesn't tostring for you
+local function TableToString(tbl: table,delimit: string,includeNames: boolean) -- cuz table.concat doesn't tostring for you
+	tbl = tbl or {}
+	delimit = delimit or ""
 	local txt
-	for i,v in (includeNames and pairs or ipairs)(tbl) do
+	for i,v in (includeNames and pairs or ipairs)(tbl) do -- use ipairs if not using names, to ensure order
 		-- http://lua-users.org/wiki/StringTrim
 		-- txt = (txt and ((txt:match'^()%s*$' and '' or txt:match'^%s*(.*%S)').." | ") or "")..(includeNames and ("[%s]=%s"):format(tostring(i),tostring(v)) or tostring(v))
 		-- https://stackoverflow.com/questions/51181222/lua-trailing-space-removal/51181334#51181334
@@ -82,13 +84,13 @@ function TableToString(tbl: table,delimit: string,includeNames: boolean) -- cuz 
 	end
 	return txt or ""
 end
-function Prnt(...)
+local function Prnt(...)
 	local args = {...}
 	local txt = (prnt_prefix_time and (TimeString()..": ") or "")..TableToString(args," | ")
 	prnt(prnt_add_nl and txt:sub(#txt)~="\n" and (txt .. "\n") or txt) -- cuz rconsoleprint/output don't put newline at end
 end
 
-function GetAllServersForPlace(placeId: number)
+local function GetAllServersForPlace(placeId: number)
 	prefer = prefer or {}
 	local servers = {} -- to hold the server data as we go
 	local cont = true
@@ -96,10 +98,11 @@ function GetAllServersForPlace(placeId: number)
 	local cnt = 0
 	local min_p,max_p,min_f,max_png
 	local maxPlayers,maxFps,maxPing = 0,0,0
-	min_p = prefer.MinPlayers and type(prefer.MinPlayers)=="number" and prefer.MinPlayers>0 and prefer.MinPlayers or 0
-	max_p = prefer.MaxPlayers and type(prefer.MaxPlayers)=="number" and prefer.MaxPlayers>0 and prefer.MaxPlayers or 0
-	min_f = prefer.MinFps and type(prefer.MinFps)=="number" and prefer.MinFps>0 and prefer.MinFps or 0
-	max_png = prefer.MaxPing and type(prefer.MaxPing)=="number" and prefer.MaxPing>0 and prefer.MaxPing or 0
+	local function numOrDefZero(val) return val and type(val)=="number" and val>0 and val or 0 end
+	min_p = numOrDefZero(prefer.MinPlayers)
+	max_p = numOrDefZero(prefer.MaxPlayers)
+	min_f = numOrDefZero(prefer.MinFps)
+	max_png = numOrDefZero(prefer.MaxPing)
 	while cont do
 		cont = false -- default to discontinue the loop, will only flip to true if we get a next page cursor
 		local url = rbx_games_url_frmt:format(tostring(placeId),cursor and cursor_frmt:format(tostring(cursor)) or "")
@@ -137,7 +140,8 @@ function GetAllServersForPlace(placeId: number)
 							   (min_f>0 and v.fps and v.fps<min_f) or 				-- filter min fps
 							   (max_png>0 and v.ping and v.ping>max_png)			-- filter max ping
 							   then continue end
-							v.origord = #servers+1
+							v.origord = #servers+1 -- fallback in case sort weights match
+							-- keep the max values found, to be used in sort weights later
 							if v.maxPlayers>maxPlayers then maxPlayers=v.maxPlayers end
 							if v.fps>maxFps then maxFps=v.fps end
 							if v.ping>maxPing then maxPing=v.ping end
@@ -171,7 +175,7 @@ function GetAllServersForPlace(placeId: number)
 	return servers,maxPlayers,maxFps,maxPing
 end
 
-function RejoinPreferredServer(preferences)
+local function RejoinPreferredServer(preferences)
 
 	if preferences and type(preferences)=="table" then
 		for i,v in pairs(preferences) do
@@ -192,30 +196,34 @@ function RejoinPreferredServer(preferences)
 	Prnt("******************************************************")
 	Prnt("Prefer:",TableToString(prefer," | ",true))
 	Prnt("------------------------------------------------------")
+	Prnt("Current PlaceId",game.PlaceId)
+	Prnt("Current (Job)ServerId",game.JobId)
+	-- get the servers but also the max plyrs,fps,& ping to use in sort weight math
 	local allSvrs,maxPlayers,maxFps,maxPing = GetAllServersForPlace(game.PlaceId)
-	Prnt("Servers Found for PlaceId",game.PlaceId,"NumSvrs",allSvrs and #allSvrs,"Time",tick()-tm)
+	Prnt("Servers Found for PlaceId",game.PlaceId,"NumSvrs",allSvrs and #allSvrs or 0,"Time",tostring(tick()-tm):sub(1,6))
 	if allSvrs and #allSvrs>0 then
 		local sortTm = tick()
 		local sort = prefer.SizeSort and type(prefer.SizeSort)=="string" and prefer.SizeSort or "asc" -- size sort prefer small or large
 		local sort_desc = sort:lower()=="desc"
-		local fps_wgt = prefer.FpsSortWeight and type(prefer.FpsSortWeight)=="number" and math.clamp(prefer.FpsSortWeight,0.01,1000) or 0.01 -- fps wgt
-		local png_wgt = prefer.PingSortWeight and type(prefer.PingSortWeight)=="number" and math.clamp(prefer.PingSortWeight,0.01,1000) or 0.01 -- ping wgt
-		local size_wgt = prefer.SizeSortWeight and type(prefer.SizeSortWeight)=="number" and math.clamp(prefer.SizeSortWeight,0.01,1000) or 0.01 -- size wgt
-		function sortWeight(svr)
+		local function numOrDefaultClamp(val) return val and type(val)=="number" and math.clamp(val,0.01,1000) or 0.01 end
+		local fps_wgt = numOrDefaultClamp(prefer.FpsSortWeight) -- fps wgt
+		local png_wgt = numOrDefaultClamp(prefer.PingSortWeight) -- ping wgt
+		local size_wgt = numOrDefaultClamp(prefer.SizeSortWeight) -- size wgt
+		local function sortWeight(svr)
 			local sz_wgt
-			if sort_desc then
+			if sort_desc then -- size weight depends on whether its asc or desc
 				sz_wgt = svr.playing/maxPlayers*size_wgt
 			else
 				sz_wgt = (1-svr.playing/maxPlayers)*size_wgt
 			end
-			return sz_wgt+svr.fps/maxFps*fps_wgt+(1-svr.ping/maxPing)*png_wgt
+			return sz_wgt+svr.fps/maxFps*fps_wgt+(1-svr.ping/maxPing)*png_wgt -- fps/ping weight always the same way (ping inverted cuz lower is better)
 		end
 		table.sort(allSvrs,function(a,b)
 			local a_w = sortWeight(a)
 			local b_w = sortWeight(b)
 			if a_w>b_w then return true
 			elseif a_w==b_w then
-				return a.origord<b.origord
+				return a.origord<b.origord -- in the rare chance weight is same, use the original order returned by rbx api to ensure table sort does not fail
 			else
 				return false
 			end
@@ -223,7 +231,7 @@ function RejoinPreferredServer(preferences)
 
 		if verbose then
 			for i,v in ipairs(allSvrs) do
-				Prnt("SORT",i,v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping)
+				Prnt("SORT",i,v.id,"playing",v.playing,"fps",v.fps,"ping",v.ping) -- if verbose dump out full sort order results for all servers found
 			end
 		end
 
@@ -234,6 +242,8 @@ function RejoinPreferredServer(preferences)
 			game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId,v.id)
 			task.wait(10) -- keep trying in case we fail to teleport to preferred, get next and so on
 		end
+	else
+		Prnt("Found no servers for PlaceId",game.PlaceId,"Time",tostring(tick()-tm):sub(1,6))
 	end
 end
 
