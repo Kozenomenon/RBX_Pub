@@ -39,8 +39,20 @@ local prefer = {
 	]]
 	FpsSortWeight = 1,
 	PingSortWeight = 1,
-	SizeSortWeight = 5
+	SizeSortWeight = 5,
+
+	--[[
+		Other settings not usually needed
+	]]
+	PrintVerbose = false,
+	PrintPrefixTime = false,
+	PrintUseConsoleWindow = false
 }
+
+
+
+
+
 
 
 --[[ *************************************************************************************************************************
@@ -48,6 +60,9 @@ local prefer = {
 							CODEZ IS BELOW _ DO NOT MESS WITH IT IF U DONT KNOW WUTWUT
 *************************************************************************************************************************
 *************************************************************************************************************************]]
+
+
+
 
 
 local verbose = false -- setting to true will print a lot
@@ -177,6 +192,7 @@ end
 
 local function RejoinPreferredServer(preferences)
 
+	prefer = prefer or {}
 	if preferences and type(preferences)=="table" then
 		for i,v in pairs(preferences) do
 			if prefer[i] and type(prefer[i])==type(v) then
@@ -184,13 +200,18 @@ local function RejoinPreferredServer(preferences)
 			end
 		end
 	end
+	verbose = prefer.PrintVerbose
+	prnt_prefix_time = prefer.PrintPrefixTime
+	if prefer.PrintUseConsoleWindow then 
+		prnt = rconsoleprint or output or printconsole or print
+	end
 
 	if prnt==rconsoleprint then
 		if not syn then rconsolecreate() end -- noticed SW needs this
 		if rconsoleclear then rconsoleclear() end
 	end
 
-	prefer = prefer or {}
+	
 	Prnt("******************************************************")
 	Prnt("Rejoin Preferred Server by KoZ")
 	Prnt("******************************************************")
