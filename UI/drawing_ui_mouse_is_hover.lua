@@ -169,6 +169,7 @@ end
 ********************************************************
 	********************************************************]]
 local RunService = game:GetService("RunService")
+Drawing = Drawing
 -- put it all in a global so we can cleanup if you run script again 
 getgenv().TestUI = getgenv().TestUI or {}
 local dbg = getgenv().TestUI
@@ -178,17 +179,17 @@ for i,v in pairs(dbg) do
 	pcall(function() dbg[i] = nil end)
 end
 -- function makes creating drawing little cleaner
-function MakeDraw(obj, props)
-	local tmpObj
-	if (Drawing and obj and type(obj)=="string" and props and type(props) == "table") then
-		tmpObj = Drawing.new(obj)
-		local mt = getmetatable(tmpObj)
-		if not mt.__type then mt.__type = obj end
+function MakeDraw(objtype, props)
+	local drawObj
+	if (Drawing and objtype and type(objtype)=="string" and props and type(props) == "table") then
+		drawObj = Drawing.new(objtype)
+		local mt = getmetatable(drawObj)
+		if not mt.__type then mt.__type = objtype end
 		for i, v in next, props do
-			tmpObj[i] = v
+			drawObj[i] = v
 		end
 	end
-	return tmpObj
+	return drawObj
 end
 -- setup the test UI
 function SetupUI()
