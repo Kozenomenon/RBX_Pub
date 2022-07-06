@@ -1100,7 +1100,10 @@ function util:setupInput()
                 if inputObj.KeyCode == me:_getKeycode(settings.ToggleGui) then
                     me:ToggleGUI()
                 elseif inputObj.KeyCode == me:_getKeycode(settings.KillScriptKey) then
-                    me:shutdown()
+                    coroutine.wrap(function() me:shutdown() end)()
+                    if settings.KillCallback and typeof(settings.KillCallback)=="function" then
+                        settings.KillCallback()
+                    end
                 else
                     for i,v in pairs(settings.Toggles) do
                         if v and v.Key and v.GetText and v.Callback and 
