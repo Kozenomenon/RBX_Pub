@@ -271,7 +271,7 @@ end
 function util:_actualDebugToFile(pargs,prefix)
     local fn = settings.DebugToFile
     if fn and appendfile and writefile and isfile then
-        local content = prefix.." "..self:_argsToPrintLine(unpack(pargs))
+        local content = (prefix or "").." "..(self:_argsToPrintLine(unpack(pargs)))
         if isfile(fn) then
             appendfile(fn, content)
         else
