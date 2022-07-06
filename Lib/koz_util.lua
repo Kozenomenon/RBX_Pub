@@ -438,14 +438,11 @@ function util:_draw(obj, props)
 end
 function util:_getGuiText()
     local me = self
-    local txt = (
-		" [%s] Show / Hide Gui\n"):format(
-            settings.ToggleGui
-    )
+    local txt = " ["..(settings.ToggleGui).."] Show / Hide Gui\n"
     for i,v in pairs(settings.Toggles) do
         if v and v.Key and v.GetText and v.Callback and 
            typeof(v.GetText)=="function" and typeof(v.Callback)=="function" then
-            txt = txt..(" [%s] %s\n"):format(v.Key,v:GetText())
+            txt = txt.." ["..(v.Key).."] "..(v:GetText()).."\n"
         end
     end
     return txt
