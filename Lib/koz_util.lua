@@ -54,6 +54,22 @@ local settings = {
 		DebugRGB = {222,128,255},
 	},
 }
+util.LogType = {
+	Default = 1,
+	Info = 2,
+	Warn = 3,
+	Error = 4,
+	Success = 5,
+	Debug = 6
+}
+util.LogColor = {
+	Default = Color3.fromRGB(245,245,245),
+	Info = Color3.fromRGB(239,239,192),
+	Warn = Color3.fromRGB(255,255,0),
+	Error = Color3.fromRGB(255,64,0),
+	Success = Color3.fromRGB(0,255,0),
+	Debug = Color3.fromRGB(222,128,255)
+}
 function applySettings(newSettings)
 
     for i,v in pairs(newSettings) do
@@ -226,22 +242,6 @@ end -- schedule / async tasks
 -----
 do -- Log Type / Color
 -----
-util.LogType = {
-	Default = 1,
-	Info = 2,
-	Warn = 3,
-	Error = 4,
-	Success = 5,
-	Debug = 6
-}
-util.LogColor = {
-	Default = Color3.fromRGB(245,245,245),
-	Info = Color3.fromRGB(239,239,192),
-	Warn = Color3.fromRGB(255,255,0),
-	Error = Color3.fromRGB(255,64,0),
-	Success = Color3.fromRGB(0,255,0),
-	Debug = Color3.fromRGB(222,128,255)
-}
 function util:_getLogColor(logType)
     local me = self
     return me.LogColor[me:_TableContains(me.LogType,logType)] or me.LogColor.Default
