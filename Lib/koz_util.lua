@@ -1108,7 +1108,7 @@ function util:setupInput()
                     for i,v in pairs(settings.Toggles) do
                         if v and v.Key and v.GetText and v.Callback and 
                            typeof(v.GetText)=="function" and typeof(v.Callback)=="function" then
-                            if inputObj.KeyCode == v.Key then
+                            if inputObj.KeyCode == me:_getKeycode(v.Key) then
                                 v:Callback()
                                 break
                             end
