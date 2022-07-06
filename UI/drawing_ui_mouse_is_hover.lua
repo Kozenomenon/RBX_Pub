@@ -71,7 +71,7 @@ function LinesAreIntersecting(ln1v1: Vector2,ln1v2: Vector2,ln2v1: Vector2,ln2v2
     return "YES"
 end
 function IsPointWithinDrawingElement(el,point: Vector2)
-	-- ah, this is where the drawing element's type is hidden at 
+	-- ah, this is where the drawing element's type is hidden at
 	local eltyp = getmetatable(el).__type
 	local xmin,xmax,ymin,ymax
 	local pnts,rad
@@ -84,20 +84,20 @@ function IsPointWithinDrawingElement(el,point: Vector2)
 		-- set points array for deeper check, if simple passes
 		pnts = { el.PointA,el.PointB,el.PointC }
 	elseif eltyp == "Square" or eltyp == "Image" then
-		-- square and image are simple box check only 
+		-- square and image are simple box check only
 		xmin = el.Position.X
 		xmax = el.Position.X+el.Size.X
 		ymin = el.Position.Y
 		ymax = el.Position.Y+el.Size.Y
 	elseif eltyp == "Text" then
-		-- text is also simple box check only, but how to 
+		-- text is also simple box check only, but how to
 		-- get bounds differs from square/image 
 		xmin = el.Center and el.Position.X-el.TextBounds.X/2 or el.Position.X
 		xmax = el.Center and el.Position.X+el.TextBounds.X/2 or el.Position.X+el.TextBounds.X
 		ymin = el.Position.Y
 		ymax = el.Position.Y+el.TextBounds.Y
 	elseif eltyp == "Quad" then
-		-- get simple bounds for quad for quick check, point must be within this first 
+		-- get simple bounds for quad for quick check, point must be within this first
 		xmin = math.min(el.PointA.X,el.PointB.X,el.PointC.X,el.PointD.X)
 		xmax = math.max(el.PointA.X,el.PointB.X,el.PointC.X,el.PointD.X)
 		ymin = math.min(el.PointA.Y,el.PointB.Y,el.PointC.Y,el.PointD.Y)
@@ -119,8 +119,8 @@ function IsPointWithinDrawingElement(el,point: Vector2)
 	if chk and pnts then
 		-- this is to check further for quads and tris
 		-- will use test line from left of screen on X axis, at point's Y coord
-		-- if intersection count is odd then point is within the shape, if 0 or even 
-		-- then it means the point is outside the shape. 
+		-- if intersection count is odd then point is within the shape, if 0 or even
+		-- then it means the point is outside the shape.
 		local lines = {}
 		local last
 		-- convert the points of the shape to lines ( table of {vector2,vector2} )
@@ -130,7 +130,7 @@ function IsPointWithinDrawingElement(el,point: Vector2)
 		end
 		-- since loop was on points, we need to make the last line to complete shape
 		table.insert(lines,{Vector2.new(last.X,last.Y),Vector2.new(pnts[1].X,pnts[1].Y)})
-		-- this is the test line going from -100 X which should be off screen 
+		-- this is the test line going from -100 X which should be off screen
 		-- and going to the point, so using the point's Y value
 		local test = {Vector2.new(-100,point.Y),Vector2.new(point.X,point.Y)}
 		local hits = 0
@@ -145,8 +145,8 @@ function IsPointWithinDrawingElement(el,point: Vector2)
 	elseif chk and rad then
 		-- this is to check for circles
 		-- uses simple distance check on the point and center of circle
-		-- if distance is equal or less than radius then it is within circle 
-		-- sqrt is a costly operation, so we rely on simple check above first 
+		-- if distance is equal or less than radius then it is within circle
+		-- sqrt is a costly operation, so we rely on simple check above first
 		local distSq = math.pow(math.max(el.Position.X,point.X)-math.min(el.Position.X,point.X),2) + -- a^2
 					   math.pow(math.max(el.Position.Y,point.Y)-math.min(el.Position.Y,point.Y),2)	 -- b^2
 		-- c^2 = a^2 + b^2, solving for c (distance)
@@ -164,13 +164,13 @@ end
 --[[  ********************************************************
 ********************************************************
 		TEST STUFF BELOW HERE 
-		Draws some shapes and uses render stepped loop 
+		Draws some shapes and uses render stepped loop
 		to check if mouse hovering, when true color changes
 ********************************************************
 	********************************************************]]
 local RunService = game:GetService("RunService")
 Drawing = Drawing
--- put it all in a global so we can cleanup if you run script again 
+-- put it all in a global so we can cleanup if you run script again
 getgenv().TestUI = getgenv().TestUI or {}
 local dbg = getgenv().TestUI
 for i,v in pairs(dbg) do
@@ -184,7 +184,7 @@ function MakeDraw(objtype, props)
 	if (Drawing and objtype and type(objtype)=="string" and props and type(props) == "table") then
 		drawObj = Drawing.new(objtype)
 		local mt = getmetatable(drawObj)
-		if not mt.__type then mt.__type = objtype end
+		if not mt.__type then mt.__type = objtype end -- SW needed this. (tbf not sure if other exploits need it too, syn does this by default)
 		for i, v in next, props do
 			drawObj[i] = v
 		end
