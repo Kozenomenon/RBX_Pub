@@ -442,7 +442,7 @@ function util:_getGuiText()
     for i,v in pairs(settings.Toggles) do
         if v and v.Key and v.GetText and v.Callback and 
            typeof(v.GetText)=="function" and typeof(v.Callback)=="function" then
-            txt = txt.." ["..(v.Key).."] "..(v:GetText()).."\n"
+            txt = txt.." ["..(v.Key or "").."] "..(v:GetText() or "").."\n"
         end
     end
     return txt
