@@ -290,6 +290,7 @@ function util:_debugToFile(pargs,prefix)
     end
 end
 function util:_actualPcon(pargs,prefix,prefclr)
+    prefix = prefix or ""
     if settings.PreferRobloxConsolePrints and _prnt then
         _prnt(self:_argsToPrintLine(unpack(pargs)),prefix,prefclr)
     else
