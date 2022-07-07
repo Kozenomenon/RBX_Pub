@@ -271,7 +271,8 @@ end
 function util:_actualDebugToFile(pargs,prefix)
     local fn = self._dbgFn
     if fn and appendfile and writefile and isfile then
-        local content = (prefix or "").." "..(self:_argsToPrintLine(unpack(pargs))).."\n"
+        local content = ((prefix and #prefix>0 and ("["..prefix.."] ")) or "")..(self:_argsToPrintLine(unpack(pargs)))
+        if #content==0 or content:sub(#content)~="\n" then content = content.."\n" end
         if isfile(fn) then
             appendfile(fn, content)
         else
