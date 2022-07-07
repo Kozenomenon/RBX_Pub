@@ -269,9 +269,9 @@ function util:_argsToPrintLine(...)
     return txt
 end
 function util:_actualDebugToFile(pargs,prefix)
-    local fn = settings.DebugToFile
+    local fn = self._dbgFn
     if fn and appendfile and writefile and isfile then
-        local content = (prefix or "").." "..(self:_argsToPrintLine(unpack(pargs)))
+        local content = (prefix or "").." "..(self:_argsToPrintLine(unpack(pargs))).."\n"
         if isfile(fn) then
             appendfile(fn, content)
         else
@@ -1234,6 +1234,9 @@ function init(newSettings,services)
         end
     else
         addFunctions()
+        if settings.DebugToFile then
+            util._dbgFn = (DateTime.now():FormatLocalTime("hh:mm:ss.SSS", "en-us")).."_"..(settings.DebugToFile)
+        end
         util:setupGui(settings.ShowGui)
         if util._RenderEvent then
             pcall(function() util._RenderEvent:Disconnect() end)
