@@ -1235,7 +1235,7 @@ function init(newSettings,services)
     else
         addFunctions()
         if settings.DebugToFile then
-            util._dbgFn = (settings.DebugToFile).."_"..(DateTime.now():FormatLocalTime("YYYYMMDD_hhmmssSSS", "en-us"))
+            util._dbgFn = (settings.DebugToFile).."_"..(DateTime.now():FormatLocalTime("YYYYMMDD_hhmmssSSS", "en-us"))..".txt"
         end
         util:setupGui(settings.ShowGui)
         if util._RenderEvent then
