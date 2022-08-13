@@ -327,11 +327,13 @@ function init(tool,newSettings,resources)
     if not IdleAnim or not MoveAnim or not FlyBarGui or not Bar then
         coroutine.wrap(function()
             local startTm = tick()
-            myVerbose("Kicking off coroutine for resource load... StartTime=",startTm)
-            while (not IdleAnim or not MoveAnim or not FlyBarGui or not Bar) and startTm>(tick()-5) and task.wait(0.1) do
-                myVerbose("Attempt loadResources. IdleAnim=",IdleAnim," | MoveAnim=",MoveAnim," | FlyBarGui=",FlyBarGui," | Bar=",Bar," | TimeLeft=",startTm-(tick()-5))
+            myVerbose("init - Kicking off coroutine for resource load... StartTime=",startTm)
+            while (not IdleAnim or not MoveAnim or not FlyBarGui or not Bar) and startTm>(tick()-5) do
+                task.wait(0.1)
+                myVerbose("init - Attempt loadResources. IdleAnim=",IdleAnim," | MoveAnim=",MoveAnim," | FlyBarGui=",FlyBarGui," | Bar=",Bar," | TimeLeft=",startTm-(tick()-5))
                 loadResources()
             end
+            myVerbose("init - loadResources success? ",(IdleAnim and MoveAnim and FlyBarGui and Bar)," | TimeTaken=",(tick()-startTm))
         end)()
     end
 
@@ -403,7 +405,7 @@ function init(tool,newSettings,resources)
     local otherToolConns = getconnections(flyTool.Equipped)
     myVerbose("init - otherToolConns Cnt=",#otherToolConns)
     for i, v in pairs(otherToolConns) do
-        myVerbose("init - otherToolConns::",i," | Function=",((v and v.Function) or "nil"))
+        myVerbose("init - otherToolConns::",i," | Function=",(v and v.Function))
         if v and v.Function then
             local succ_fi,fi = pcall(function()
                 return debug.getinfo(v.Function)
@@ -420,7 +422,7 @@ function init(tool,newSettings,resources)
             end
             local succ_fEnv,fEnv = pcall(function() 
                 local tmpfEnv = getfenv(v.Function);
-                myVerbose("init - otherToolConns::",i," | script=",((tmpfEnv and tmpfEnv.script) or "nil"))
+                myVerbose("init - otherToolConns::",i," | script=",(tmpfEnv and tmpfEnv.script))
                 if tmpfEnv and tmpfEnv.script then
                     sethiddenproperty(tmpfEnv.script,"Disabled",true)
                     myVerbose("init - disabled other script. Source=",gethiddenproperty(tmpfEnv.script,"Source"))
@@ -445,25 +447,28 @@ function init(tool,newSettings,resources)
     ToolEquippedEvent = flyTool.Equipped:Connect(ToggleToolEquipped)
     myVerbose("init - Connected ToggleToolEquipped")
 
-    while running and task.wait(0.1) do
-        if equippedToggle then
-            flyAmountLeft = flyAmountLeft - flySettings.FlyDrainAmount;
-        elseif tick() - unequippedTime > flySettings.FlyRechargeDelay then
-            flyAmountLeft = flyAmountLeft + flySettings.FlyRechargeAmount;
+    coroutine.wrap(function()
+        myVerbose("init - running loop started")
+        while running and task.wait(0.1) do
+            if equippedToggle then
+                flyAmountLeft = flyAmountLeft - flySettings.FlyDrainAmount;
+            elseif tick() - unequippedTime > flySettings.FlyRechargeDelay then
+                flyAmountLeft = flyAmountLeft + flySettings.FlyRechargeAmount;
+            end;
+            if flyAmountLeft > flySettings.MaxFlyTime then
+                flyAmountLeft = flySettings.MaxFlyTime;
+            elseif flyAmountLeft < 0 then
+                flyAmountLeft = 0;
+                equippedToggle = false;
+                UnFly();
+                unequippedTime = tick();
+            end;
+            if Bar then
+                Bar.Size = UDim2.new(flyAmountLeft / flySettings.MaxFlyTime * barSize.X.Scale, 0, barSize.Y.Scale, 0);
+            end
         end;
-        if flyAmountLeft > flySettings.MaxFlyTime then
-            flyAmountLeft = flySettings.MaxFlyTime;
-        elseif flyAmountLeft < 0 then
-            flyAmountLeft = 0;
-            equippedToggle = false;
-            UnFly();
-            unequippedTime = tick();
-        end;
-        if Bar then
-            Bar.Size = UDim2.new(flyAmountLeft / flySettings.MaxFlyTime * barSize.X.Scale, 0, barSize.Y.Scale, 0);
-        end
-    end;
-    myVerbose("init - running loop")
+        myVerbose("init - running loop ended")
+    end)()
 
     myInfo("init - End")
 end
