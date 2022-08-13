@@ -203,9 +203,9 @@ local function ToggleToolEquipped()
         equippedToggle = true;
         Fly();
     end;
-    --task.wait(0.1);
-    --if not running then return end
-    flyTool.Parent = LocalPlayer.Backpack;
+    task.wait(0.1);
+    if not running then return end
+    flyTool.Parent = LocalPlayer:FindFirstChild("Backpack");
 end
 
 function shutdown()
