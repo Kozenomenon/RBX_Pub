@@ -21,6 +21,10 @@ local unequippedTime = tick()
 local flyAmountLeft
 local flyTool
 
+local function myPrint(...)
+    print(...)
+end
+
 local function init_error(msg,stop)
     table.insert(util.errors,msg)
     util.stop_init = (stop and true) or util.stop_init
@@ -144,8 +148,8 @@ local function ToggleToolEquipped()
         equippedToggle = true;
         Fly();
     end;
-    task.wait(0.1);
-    if not running then return end
+    --task.wait(0.1);
+    --if not running then return end
     flyTool.Parent = LocalPlayer.Backpack;
 end
 
