@@ -401,17 +401,21 @@ function init(tool,newSettings,resources)
         myVerbose("init - Disconnected ToolEquippedEvent")
     end
     local otherToolConns = getconnections(flyTool.Equipped)
+    myVerbose("init - otherToolConns=",#otherToolConns)
     for i, v in pairs(otherToolConns) do
+        myVerbose("init - otherToolConns::",i," | Function=",((v and v.Function) or "nil"))
         if v and v.Function then
             pcall(function() 
                 local fEnv = getfenv(v.Function);
+                myVerbose("init - otherToolConns::",i," | script=",((fEnv and fEnv.script) or "nil"))
                 if fEnv and fEnv.script then
                     sethiddenproperty(fEnv.script,"Disabled",true)
-                    myVerbose("init - disabled other script ",getprops(fEnv.script).source)
+                    myVerbose("init - disabled other script. Source=",(getprops(fEnv.script)).Source)
                 end
             end)
+            myVerbose("init - disabling connection. Func=",v.Function," | Source=",(debug.getinfo(v.Function)).Source)
             v:Disable();
-            myVerbose("init - disabled connection ",debug.getinfo(v.Function).source)
+            myVerbose("init - disabled connection. Func=",v.Function," | Source=",(debug.getinfo(v.Function)).Source)
         end
     end
     ToolEquippedEvent = flyTool.Equipped:Connect(ToggleToolEquipped)
