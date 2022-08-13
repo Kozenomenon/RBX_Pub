@@ -216,15 +216,46 @@ function init(tool,newSettings,resources)
     BodyVelocity.maxForce = Vector3.new(1, 1, 1) * 1000000;
     BodyVelocity.P = 10000;
 
-    IdleAnim = resources and resources["IdleAnim"] and Humanoid:LoadAnimation(resources["IdleAnim"])
-    MoveAnim = resources and resources["MoveAnim"] and Humanoid:LoadAnimation(resources["MoveAnim"])
-    FlyBarGui = resources and resources["FlyBarGui"]
-    Bar = FlyBarGui and FlyBarGui:WaitForChild("Bar")
-    if Bar then
-        barSize = Bar.Size
+    IdleAnim = nil
+    MoveAnim = nil
+    FlyBarGui = nil
+    Bar = nil
+    local function loadResources()
+        if resources then
+            if not IdleAnim then
+                local tmpIdleAsset = resources["IdleAnim"]
+                if tmpIdleAsset then
+                    IdleAnim = Humanoid:LoadAnimation(resources["IdleAnim"])
+                end
+            end
+            if not MoveAnim then
+                local tmpMoveAsset = resources["MoveAnim"]
+                if tmpMoveAsset then
+                    MoveAnim = Humanoid:LoadAnimation(resources["MoveAnim"])
+                end
+            end
+            if not FlyBarGui then
+                local tmpFlyBar = resources["FlyBarGui"]
+                if tmpFlyBar and typeof(tmpFlyBar)=="Instance" and tmpFlyBar.ClassName=="ScreenGui" then
+                    local tmpBar = tmpFlyBar:WaitForChild("Bar")
+                    if tmpBar and typeof(tmpBar)=="Instance" and tmpBar.ClassName=="Frame" then
+                        FlyBarGui = tmpFlyBar
+                        Bar = tmpBar
+                        barSize = Bar.Size
+                        FlyBarGui.Parent = LocalPlayer.PlayerGui
+                    end
+                end
+            end
+        end
     end
-    if FlyBarGui then
-        FlyBarGui.Parent = LocalPlayer.PlayerGui
+    loadResources()
+    if not IdleAnim or not MoveAnim or not FlyBarGui or not Bar then
+        coroutine.wrap(function()
+            local startTm = tick()
+            while (not IdleAnim or not MoveAnim or not FlyBarGui or not Bar) and startTm>(tick()-5) and task.wait(0.1) do
+                loadResources()
+            end
+        end)()
     end
 
     flyTool = tool
