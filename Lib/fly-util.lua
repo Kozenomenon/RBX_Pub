@@ -216,8 +216,8 @@ function init(tool,newSettings,resources)
     BodyVelocity.maxForce = Vector3.new(1, 1, 1) * 1000000;
     BodyVelocity.P = 10000;
 
-    IdleAnim = resources and resources["IdleAnim"]
-    MoveAnim = resources and resources["MoveAnim"]
+    IdleAnim = resources and resources["IdleAnim"] and Humanoid:LoadAnimation(resources["IdleAnim"])
+    MoveAnim = resources and resources["MoveAnim"] and Humanoid:LoadAnimation(resources["MoveAnim"])
     FlyBarGui = resources and resources["FlyBarGui"]
     Bar = FlyBarGui and FlyBarGui:WaitForChild("Bar")
     if Bar then
