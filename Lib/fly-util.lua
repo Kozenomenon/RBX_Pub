@@ -135,10 +135,14 @@ local function Fly()
 	Humanoid.PlatformStand = true;
 	Humanoid.HipHeight = 0;
 	if MoveAnim then
-        pcall(function()
+        local succ_play,err_play = pcall(function()
             MoveAnim:Play()
             myVerbose("Fly - MoveAnim played")
+            return
         end)
+        if not succ_play then
+            myError("Fly - failed to play MoveAnim. Error=",err_play)
+        end
     end
 	ToggleFlyPhysics(true);
 	for i,v in pairs({ Humanoid.StateChanged:Connect(HumanoidStateChanged), RunService.RenderStepped:Connect(FlyMoveMath) }) do
@@ -149,29 +153,41 @@ local function Fly()
 end
 local function RemoveEvents()
 	for i, v in pairs(events) do
-		pcall(function() v:Disconnect(); end);
-        myVerbose("RemoveEvents - Disconnected::",i,v)
+		local succ_dis,err_dis = pcall(function() v:Disconnect(); return; end);
+        if succ_dis then
+            myVerbose("RemoveEvents - Disconnected::",i,v)
+        else
+            myError("RemoveEvents - Failed Disconnect::",i,v," | Error=",err_dis)
+        end
         events[i] = nil
 	end;
     table.clear(events);
 end
 local function UnFly()
     myVerbose("UnFly Begin")
-    Humanoid.HipHeight = 1;
+    if Humanoid then
+        Humanoid.HipHeight = 1;
+    end
 	if MoveAnim then
-        pcall(function()
+        local succ_stop,err_stop = pcall(function()
             MoveAnim:Stop()
             myVerbose("UnFly - MoveAnim stopped")
+            return
         end)
+        if not succ_stop then
+            myError("UnFly - Failed to stop MoveAnim! Error=",err_stop)
+        end
     end
-	Humanoid.PlatformStand = false;
-	task.delay(0.1, function()
-		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
-		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
-		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
-		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
-        myVerbose("UnFly - Humanoid State Changed >>> ",Humanoid:GetState())
-	end);
+    if Humanoid then
+        Humanoid.PlatformStand = false;
+        task.delay(0.1, function()
+            Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
+            Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
+            Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
+            Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
+            myVerbose("UnFly - Humanoid State Changed >>> ",Humanoid:GetState())
+        end);
+    end
 	ToggleFlyPhysics(false);
 	RemoveEvents();
     myVerbose("UnFly End")
@@ -209,25 +225,41 @@ function shutdown()
         myVerbose("shutdown - ContextActions unbound.")
     end
     if CharacterRemovingEvent then
-        pcall(function() CharacterRemovingEvent:Disconnect() end)
+        local succ_dis,err_dis = pcall(function() CharacterRemovingEvent:Disconnect(); return; end)
+        if succ_dis then
+            myVerbose("shutdown - Disconnected CharacterRemovingEvent")
+        else
+            myError("shutdown - Failed Disconnecting CharacterRemovingEvent! Error=",err_dis)
+        end
         CharacterRemovingEvent = nil
-        myVerbose("shutdown - Disconnected CharacterRemovingEvent")
     end
     if ToolParentChangeEvent then
-        pcall(function() ToolParentChangeEvent:Disconnect() end)
+        local succ_dis,err_dis = pcall(function() ToolParentChangeEvent:Disconnect(); return; end)
+        if succ_dis then
+            myVerbose("shutdown - Disconnected ToolParentChangeEvent")
+        else
+            myError("shutdown - Failed Disconnecting ToolParentChangeEvent! Error=",err_dis)
+        end
         ToolParentChangeEvent = nil
-        myVerbose("shutdown - Disconnected ToolParentChangeEvent")
     end
     if ToolEquippedEvent then
-        pcall(function() ToolEquippedEvent:Disconnect() end)
-        ToolEquippedEvent = nil
-        myVerbose("shutdown - Disconnected ToolEquippedEvent")
+        local succ_dis,err_dis = pcall(function() ToolEquippedEvent:Disconnect(); return; end)
+        if succ_dis then
+            myVerbose("shutdown - Disconnected ToolEquippedEvent")
+        else
+            myError("shutdown - Failed Disconnecting ToolEquippedEvent! Error=",err_dis)
+        end
+        ToolParentChangeEvent = nil
     end
     if FlyBarGui then
-        pcall(function()
+        local succ_des,err_des = pcall(function()
             FlyBarGui:Destroy();
             myVerbose("shutdown - FlyBarGui destroyed")
+            return
         end)
+        if not succ_des then
+            myError("shutdown - failed to destroy FlyBarGui! Error=",err_des)
+        end
     end
     myInfo("shutdown - End")
 end
@@ -363,9 +395,13 @@ function init(tool,newSettings,resources)
     end);
 
     if CharacterRemovingEvent then
-        pcall(function() CharacterRemovingEvent:Disconnect() end)
+        local succ_dis,err_dis = pcall(function() CharacterRemovingEvent:Disconnect(); return; end)
+        if succ_dis then
+            myVerbose("init - Disconnected CharacterRemovingEvent")
+        else
+            myError("init - Failed Disconnecting CharacterRemovingEvent! Error=",err_dis)
+        end
         CharacterRemovingEvent = nil
-        myVerbose("init - Disconnected CharacterRemovingEvent")
     end
     CharacterRemovingEvent = LocalPlayer.CharacterRemoving:Connect(function()
         myVerbose("CharacterRemovingEvent - Begin")
@@ -380,9 +416,13 @@ function init(tool,newSettings,resources)
     myVerbose("init - Connected CharacterRemovingEvent")
 
     if ToolParentChangeEvent then
-        pcall(function() ToolParentChangeEvent:Disconnect() end)
+        local succ_dis,err_dis = pcall(function() ToolParentChangeEvent:Disconnect(); return; end)
+        if succ_dis then
+            myVerbose("init - Disconnected ToolParentChangeEvent")
+        else
+            myError("init - Failed Disconnecting ToolParentChangeEvent! Error=",err_dis)
+        end
         ToolParentChangeEvent = nil
-        myVerbose("init - Disconnected ToolParentChangeEvent")
     end
     ToolParentChangeEvent = flyTool:GetPropertyChangedSignal("Parent"):Connect(function()
         myVerbose("ToolParentChangeEvent - Begin")
@@ -399,9 +439,13 @@ function init(tool,newSettings,resources)
     myVerbose("init - Connected ToolParentChangeEvent")
 
     if ToolEquippedEvent then
-        pcall(function() ToolEquippedEvent:Disconnect() end)
+        local succ_dis,err_dis = pcall(function() ToolEquippedEvent:Disconnect(); return; end)
+        if succ_dis then
+            myVerbose("init - Disconnected ToolEquippedEvent")
+        else
+            myError("init - Failed Disconnecting ToolEquippedEvent! Error=",err_dis)
+        end
         ToolEquippedEvent = nil
-        myVerbose("init - Disconnected ToolEquippedEvent")
     end
     local otherToolConns = getconnections(flyTool.Equipped)
     myVerbose("init - otherToolConns Cnt=",#otherToolConns)
