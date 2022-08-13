@@ -21,9 +21,9 @@ local flySettings = {
     FlyDrainAmount = 1,
     FlyRechargeAmount = 0.5,
     FlyRechargeDelay = 2,
-    PrintError = true,
-    PrintInfo = true,
-    PrintVerbose = true
+    PrintError = false,
+    PrintInfo = false,
+    PrintVerbose = false
 }
 
 local barSize
