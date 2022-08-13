@@ -401,21 +401,45 @@ function init(tool,newSettings,resources)
         myVerbose("init - Disconnected ToolEquippedEvent")
     end
     local otherToolConns = getconnections(flyTool.Equipped)
-    myVerbose("init - otherToolConns=",#otherToolConns)
+    myVerbose("init - otherToolConns Cnt=",#otherToolConns)
     for i, v in pairs(otherToolConns) do
         myVerbose("init - otherToolConns::",i," | Function=",((v and v.Function) or "nil"))
         if v and v.Function then
-            pcall(function() 
-                local fEnv = getfenv(v.Function);
-                myVerbose("init - otherToolConns::",i," | script=",((fEnv and fEnv.script) or "nil"))
-                if fEnv and fEnv.script then
-                    sethiddenproperty(fEnv.script,"Disabled",true)
-                    myVerbose("init - disabled other script. Source=",(getprops(fEnv.script)).Source)
-                end
+            local succ_fi,fi = pcall(function()
+                return debug.getinfo(v.Function)
             end)
-            myVerbose("init - disabling connection. Func=",v.Function," | Source=",(debug.getinfo(v.Function)).Source)
-            v:Disable();
-            myVerbose("init - disabled connection. Func=",v.Function," | Source=",(debug.getinfo(v.Function)).Source)
+            if succ_fi then
+                if flySettings.PrintVerbose then
+                    myVerbose("init - got func info. Func=",v.Function," | Cnt=",#fi)
+                    for i2,v2 in pairs(fi) do
+                        myVerbose(" --- FuncInfo::",i2,"=",v2," | type=",type(v2), " | typeof=",typeof(v2))
+                    end
+                end
+            else
+                myError("init - failed getting func info! Func=",v.Function," | Error=",fi)
+            end
+            local succ_fEnv,fEnv = pcall(function() 
+                local tmpfEnv = getfenv(v.Function);
+                myVerbose("init - otherToolConns::",i," | script=",((tmpfEnv and tmpfEnv.script) or "nil"))
+                if tmpfEnv and tmpfEnv.script then
+                    sethiddenproperty(tmpfEnv.script,"Disabled",true)
+                    myVerbose("init - disabled other script. Source=",gethiddenproperty(tmpfEnv.script,"Source"))
+                end
+                return tmpfEnv
+            end)
+            if not succ_fEnv then
+                myError("init - failed disabling other env! Func=",v.Function," | Error=",fEnv)
+            end
+            myVerbose("init - disabling connection. Func=",v.Function," | Source=",fi.Source)
+            local succ_dis,err_dis = pcall(function()
+                v:Disable();
+                return
+            end)
+            if succ_dis then
+                myVerbose("init - disabled connection. Func=",v.Function," | Source=",fi.Source)
+            else
+                myError("init - failed to disable! Func=",v.Function," | Error=",err_dis)
+            end
         end
     end
     ToolEquippedEvent = flyTool.Equipped:Connect(ToggleToolEquipped)
