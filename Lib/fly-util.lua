@@ -339,8 +339,7 @@ function init(tool,newSettings,resources)
             unequippedTime = tick();
         end;
         if Bar then
-            print("Bar",Bar,type(Bar),typeof(Bar))
-            Bar.Size = UDim2.new(flyAmountLeft / flySettings.MaxFlyTime * barSize.X.Scale, 0, barSize.Size.Y.Scale, 0);
+            Bar.Size = UDim2.new(flyAmountLeft / flySettings.MaxFlyTime * barSize.X.Scale, 0, barSize.Y.Scale, 0);
         end
     end;
 
