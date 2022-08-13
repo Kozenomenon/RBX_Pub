@@ -125,11 +125,11 @@ local function Fly()
     myVerbose("Fly Begin")
     if Humanoid then
 		if Humanoid:GetState() == Enum.HumanoidStateType.Dead then
-            myError("Dead! Cannot 'Fly'")
+            myError("Fly - Dead! Cannot 'Fly'")
 			return;
 		end;
 	else
-        myError("No Humanoid!!! Cannot 'Fly'")
+        myError("Fly - No Humanoid!!! Cannot 'Fly'")
 		return;
 	end;
 	Humanoid.PlatformStand = true;
@@ -137,11 +137,12 @@ local function Fly()
 	if MoveAnim then
         pcall(function()
             MoveAnim:Play()
-            myVerbose("MoveAnim played")
+            myVerbose("Fly - MoveAnim played")
         end)
     end
 	ToggleFlyPhysics(true);
 	for i,v in pairs({ Humanoid.StateChanged:Connect(HumanoidStateChanged), RunService.RenderStepped:Connect(FlyMoveMath) }) do
+        myVerbose("Fly - Connected::",i,v)
         table.insert(events,v)
     end
     myVerbose("Fly End")
@@ -149,7 +150,7 @@ end
 local function RemoveEvents()
 	for i, v in pairs(events) do
 		pcall(function() v:Disconnect(); end);
-        myVerbose("Disconnected::",i,v)
+        myVerbose("RemoveEvents - Disconnected::",i,v)
         events[i] = nil
 	end;
     table.clear(events);
@@ -160,7 +161,7 @@ local function UnFly()
 	if MoveAnim then
         pcall(function()
             MoveAnim:Stop()
-            myVerbose("MoveAnim stopped")
+            myVerbose("UnFly - MoveAnim stopped")
         end)
     end
 	Humanoid.PlatformStand = false;
@@ -169,7 +170,7 @@ local function UnFly()
 		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
 		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
 		Humanoid:ChangeState(Enum.HumanoidStateType.Freefall);
-        myVerbose("Humanoid State Changed >>> ",Humanoid:GetState())
+        myVerbose("UnFly - Humanoid State Changed >>> ",Humanoid:GetState())
 	end);
 	ToggleFlyPhysics(false);
 	RemoveEvents();
@@ -407,40 +408,41 @@ function init(tool,newSettings,resources)
     for i, v in pairs(otherToolConns) do
         myVerbose("init - otherToolConns::",i," | Function=",(v and v.Function))
         if v and v.Function then
+            local func = v.Function
             local succ_fi,fi = pcall(function()
-                return debug.getinfo(v.Function)
+                return debug.getinfo(func)
             end)
             if succ_fi then
                 if flySettings.PrintVerbose then
-                    myVerbose("init - got func info. Func=",v.Function," | Cnt=",#fi)
+                    myVerbose("init - got func info. Func=",func," | Cnt=",#fi)
                     for i2,v2 in pairs(fi) do
                         myVerbose(" --- FuncInfo::",i2,"=",v2," | type=",type(v2), " | typeof=",typeof(v2))
                     end
                 end
             else
-                myError("init - failed getting func info! Func=",v.Function," | Error=",fi)
+                myError("init - failed getting func info! Func=",func," | Error=",fi)
             end
             local succ_fEnv,fEnv = pcall(function() 
-                local tmpfEnv = getfenv(v.Function);
+                local tmpfEnv = getfenv(func);
                 myVerbose("init - otherToolConns::",i," | script=",(tmpfEnv and tmpfEnv.script))
                 if tmpfEnv and tmpfEnv.script then
                     sethiddenproperty(tmpfEnv.script,"Disabled",true)
-                    myVerbose("init - disabled other script. Source=",gethiddenproperty(tmpfEnv.script,"Source"))
+                    myVerbose("init - otherToolConns::",i," | Disabled script=",(tmpfEnv and tmpfEnv.script))
                 end
                 return tmpfEnv
             end)
             if not succ_fEnv then
-                myError("init - failed disabling other env! Func=",v.Function," | Error=",fEnv)
+                myError("init - failed disabling other env! Func=",func," | Error=",fEnv)
             end
-            myVerbose("init - disabling connection. Func=",v.Function," | Source=",fi.Source)
+            myVerbose("init - disabling connection. Func=",func," | source=",fi.source)
             local succ_dis,err_dis = pcall(function()
                 v:Disable();
                 return
             end)
             if succ_dis then
-                myVerbose("init - disabled connection. Func=",v.Function," | Source=",fi.Source)
+                myVerbose("init - disabled connection. Func=",func," | source=",fi.source)
             else
-                myError("init - failed to disable! Func=",v.Function," | Error=",err_dis)
+                myError("init - failed to disable! Func=",func," | Error=",err_dis)
             end
         end
     end
