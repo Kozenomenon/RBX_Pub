@@ -373,6 +373,12 @@ function init(tool,newSettings,resources)
     flyTool = tool
     flyAmountLeft = flySettings.MaxFlyTime
 
+    MoveActions.forward = 0
+	MoveActions.backward = 0
+	MoveActions.right = 0
+	MoveActions.left = 0
+    MoveActions.up = 0
+
     ContextActionService:BindAction("forward", HandleMoveAction, false, Enum.PlayerActions.CharacterForward);
     ContextActionService:BindAction("backward", HandleMoveAction, false, Enum.PlayerActions.CharacterBackward);
     ContextActionService:BindAction("left", HandleMoveAction, false, Enum.PlayerActions.CharacterLeft);
