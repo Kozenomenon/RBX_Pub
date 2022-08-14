@@ -253,8 +253,9 @@ function shutdown()
     end
     if FlyBarGui then
         local succ_des,err_des = pcall(function()
-            FlyBarGui:Destroy();
-            myVerbose("shutdown - FlyBarGui destroyed")
+            --FlyBarGui:Destroy();
+            --myVerbose("shutdown - FlyBarGui destroyed")
+            FlyBarGui.Visible = false
             return
         end)
         if not succ_des then
@@ -346,6 +347,7 @@ function init(tool,newSettings,resources)
                         Bar = tmpBar
                         barSize = Bar.Size
                         FlyBarGui.Parent = LocalPlayer.PlayerGui
+                        FlyBarGui.Visible = true
                         myVerbose("loadResources - FlyBarGui=",FlyBarGui," | Bar=",Bar," | barSize=",barSize)
                     else
                         myVerbose("loadResources - Nil/Invalid Bar=",tmpBar)
