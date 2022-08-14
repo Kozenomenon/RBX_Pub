@@ -1,5 +1,5 @@
 --[[
-    version 1.1.1
+    version 1.1.2
 ]]
 
 local RunService,Players,ContextActionService
@@ -218,7 +218,7 @@ local function _pcon(pargs,prefix,prefclr)
         else
             _prnt(_argsToPrintLine(unpack(pargs)),prefix,prefclr)
         end
-    elseif printconsole then
+    --[[elseif printconsole then
         local s = _argsToPrintLine((#prefix>0 and (prefix..":: ")) or "",unpack(pargs))
         local c = _pColors[prefclr] or _pColors.WHITE
         local r,g,b = c.R*255,c.G*255,c.B*255
@@ -227,7 +227,7 @@ local function _pcon(pargs,prefix,prefclr)
             _sched:add(printconsole,s,r,g,b)
         else
             printconsole(s,r,g,b)
-        end
+        end]]
     else
         if _sched:running() then
             _sched:add(print,(#prefix>0 and (prefix..":: ")) or "",unpack(pargs))
