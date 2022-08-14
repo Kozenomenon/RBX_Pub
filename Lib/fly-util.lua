@@ -2,8 +2,8 @@ local RunService,Players,ContextActionService
 
 local function makeTable(t)
     local _t = (t and type(t)=="table" and t) or {}
-    setmetatable(t,{})
-    return t
+    setmetatable(_t,{})
+    return _t
 end
 -- will be returned at end
 local util = makeTable()
@@ -48,8 +48,7 @@ end ----
 --------
 do ----- Internal schedule / async tasks
 --------
-local _scheduled = {}
-setmetatable(_scheduled,{})
+local _scheduled = makeTable()
 local _scheduledMax = 1000
 local _scheduleMinToProcess = 3
 local _scheduleMaxToProcess = 10
@@ -584,7 +583,7 @@ function _events:remove(name)
     if not name or type(name)~="string" or #name==0 then
         return
     end
-    __events = __events or (function() local ev={};setmetatable(ev,{});return ev; end)()
+    __events = __events or makeTable()
     local ev=__events[name]
     if ev and typeof(ev)=="RBXScriptConnection" then
         local succ_ev,err_ev = pcall(function() ev:Disconnect();return; end)
@@ -600,7 +599,7 @@ function _events:add(name,signal,func)
     if not name or type(name)~="string" or #name==0 or not signal or typeof(signal)~="RBXScriptSignal" or not func or type(func)~="function" then
         return
     end
-    __events = __events or (function() local ev={};setmetatable(ev,{});return ev; end)()
+    __events = __events or makeTable()
     _events:remove(name)
     local succ_ev,err_ev = pcall(function() __events[name]=signal:Connect(func);return; end)
     if succ_ev then
@@ -610,7 +609,7 @@ function _events:add(name,signal,func)
     end
 end
 function _events:clear()
-    __events = __events or (function() local ev={};setmetatable(ev,{});return ev; end)()
+    __events = __events or makeTable()
     for i,v in pairs(__events) do
         _events:remove(i)
     end
