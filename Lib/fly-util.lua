@@ -1,3 +1,7 @@
+--[[
+    version 1.0
+]]
+
 local RunService,Players,ContextActionService
 
 local function makeTable(t)
