@@ -255,7 +255,7 @@ function shutdown()
         local succ_des,err_des = pcall(function()
             --FlyBarGui:Destroy();
             --myVerbose("shutdown - FlyBarGui destroyed")
-            FlyBarGui.Visible = false
+            FlyBarGui.Enabled = false
             return
         end)
         if not succ_des then
@@ -347,7 +347,7 @@ function init(tool,newSettings,resources)
                         Bar = tmpBar
                         barSize = Bar.Size
                         FlyBarGui.Parent = LocalPlayer.PlayerGui
-                        FlyBarGui.Visible = true
+                        FlyBarGui.Enabled = true
                         myVerbose("loadResources - FlyBarGui=",FlyBarGui," | Bar=",Bar," | barSize=",barSize)
                     else
                         myVerbose("loadResources - Nil/Invalid Bar=",tmpBar)
@@ -437,8 +437,10 @@ function init(tool,newSettings,resources)
         if not flyTool.Parent then
             if FlyBarGui then
                 pcall(function()
-                    FlyBarGui:Destroy()
-                    myVerbose("ToolParentChangeEvent - FlyBarGui destroyed")
+                    --FlyBarGui:Destroy()
+                    --myVerbose("ToolParentChangeEvent - FlyBarGui destroyed")
+                    FlyBarGui.Enabled = false
+                    myVerbose("ToolParentChangeEvent - FlyBarGui disabled")
                 end)
             end
         end;
