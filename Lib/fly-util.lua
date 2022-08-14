@@ -1,5 +1,5 @@
 --[[
-    version 1.1
+    version 1.1.1
 ]]
 
 local RunService,Players,ContextActionService
@@ -348,6 +348,9 @@ function _init:validateParms(tool,settings,resources)
 end
 
 function _init:begin(toolParm,settingsParm,resourcesParm)
+    _init:applySettings(settingsParm)
+    _p:info("init - Applied Settings")
+
     _p:info("init - Begin")
 
     if _init:validateParms(toolParm,settingsParm,resourcesParm) then
@@ -357,14 +360,10 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
         return
     end
 
-    local tool,newSettings,resources
+    local tool,resources
     tool = toolParm
-    newSettings = settingsParm
     resources = resourcesParm
     
-    _init:applySettings(newSettings)
-    _p:info("init - Applied Settings")
-
     _sched:start()
     _p:info("init - scheduler started")
 
