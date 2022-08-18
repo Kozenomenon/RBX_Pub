@@ -1,5 +1,5 @@
 --[[
-    version 1.1.2
+    version 1.1.5
 ]]
 
 local RunService,Players,ContextActionService
@@ -11,11 +11,18 @@ local function makeTable(t)
 end
 -- will be returned at end
 local util = makeTable()
-util.errors = makeTable()
+util.errors = makeTable({
+    shutdownBegin = Instance.new("BindableEvent"),  -- when Fly Util shutdown starts, cannot call util funcs until done
+    shutdownEnd = Instance.new("BindableEvent"),    -- when Fly Util shutdown is finished, can now call util funcs
+    initBegin = Instance.new("BindableEvent"),      -- Fly Util starts initialization, cannot call util funcs until done
+    initEnd = Instance.new("BindableEvent"),        -- Fly Util init has finished, can now call util funcs
+    onFly = Instance.new("BindableEvent"),          -- when Flying is about to be turned on, Tool.Equipped was triggered
+    onUnFly = Instance.new("BindableEvent"),        -- when Flying is about to be turned off, Tool.Unequipped (or Tool.Equipped again) was triggered
+    onFire = Instance.new("BindableEvent")          -- when Tool.Activated is triggered
+})
 -- internal locals
-local LocalPlayer,Backpack,ControlModule,Character,Humanoid,BodyGyro,BodyVelocity,HumanoidRootPart,Animate,CurrentCamera,IdleAnim,MoveAnim,FlyBarGui,Bar,
-    thread_moveActions,thread_flyLoop
-local internal,_sched,_p,_init,_events = makeTable(),makeTable(),makeTable(),makeTable(),makeTable()
+local LocalPlayer,Backpack,ControlModule,Character,Humanoid,BodyGyro,BodyVelocity,HumanoidRootPart,Animate,CurrentCamera,IdleAnim,MoveAnim,FlyBarGui,Bar
+local internal,_sched,_p,_init,_events,_threads = makeTable(),makeTable(),makeTable(),makeTable(),makeTable(),makeTable()
 
 local MoveActions = makeTable({
 	forward = 0,
@@ -39,7 +46,7 @@ local flySettings = makeTable({
     PrintDebug = false
 })
 
-local barSize,equippedToggle,unequippedTime,flyAmountLeft,flyTool,running,flyEnabled,jumpState
+local barSize,equippedToggle,unequippedTime,flyAmountLeft,flyTool,running,flyEnabled,jumpState,flyToolParent
 
 --------
 do ----- 
@@ -98,7 +105,7 @@ local function _removeSchedulerEvent()
         local succ_rem,err_rem = pcall(function() _schedulerEvent:Disconnect();return; end)
         removed = succ_rem     
     end
-    if not removed then
+    if not removed and RunService then
         local hbConns = getconnections(RunService.Heartbeat)
         for i,v in pairs(hbConns) do
             if v and v.Function == _schedulerEventFunc then
@@ -138,6 +145,135 @@ function _sched:stop()
 end
 --------
 end ---- Internal schedule / async tasks
+--------
+
+--------
+do ----- Thread Control
+--------
+local __threads = makeTable()
+local __maxWait = 2
+
+local function __runThreadFunc(nm)
+    task.wait()
+    local th = __threads[nm]
+    _p:debug("Thread Begin - Name=",nm," | runs=",(th and th.cnt~=nil and tostring(th.cnt) or "nil"),
+                                       " | Interval=",(th and th.interval~=nil and tostring(th.interval) or "nil"),
+                                       " | Func=",(th and th.func and tostring(th.func) or "nil"),
+                                       " | Thread=",(th and th.co and tostring(th.co) or "nil"))
+    if th then th.cnt = 0 end
+    while th and not th.kill and th.func and task.wait(th.interval) do
+        th = __threads[nm]
+        if th and not th.kill and th.func then
+            th.func()
+            th.cnt = th.cnt + 1
+        end
+    end
+    _p:debug("Thread End - Name=",nm," | runs=",(th and th.cnt~=nil and tostring(th.cnt) or "nil"),
+                                     " | Interval=",(th and th.interval~=nil and tostring(th.interval) or "nil"),
+                                     " | Func=",(th and th.func and tostring(th.func) or "nil"),
+                                     " | Thread=",(th and th.co and tostring(th.co) or "nil"))
+end
+local function __killThread(nm,th)
+    if not nm or type(nm)~="string" or #nm==0 then return end
+    if not th or type(th)~="table" then return end
+    th.kill = true
+    local co = th and th.co
+    if not co or type(co)~="thread" then return end
+    local tm = tick()
+    while co and coroutine.status(co)~="dead" do
+        local nowTm = tick()
+        if nowTm-tm>__maxWait then
+            _p:warn("__killThread - !Killing! Name=",nm,"| Waited Time=",nowTm-tm," | Killing thread=",co)
+            coroutine.close(co)
+            _p:warn("__killThread - !Killed! Name=",nm,"| thread=",co," | status=",coroutine.status(co))
+        end
+        task.wait()
+    end
+    _p:debug("__killThread End. Name=",nm,"| Waited Time=",tick()-tm,"| thread=",(co and tostring(co) or "nil")," | status=",(co and coroutine.status(co) or "nil"))
+end
+function _threads:add(name,interval,func,await)
+    local function __t_add()
+        if not name or type(name)~="string" or #name==0 then return end
+        if not func or type(func)~="function" then return end
+        local cadence = (interval and type(interval)=="number" and interval>0 and interval) or 0.1
+        _p:info("ThreadAdd - Begin. Name=",name," | Interval=",cadence," | Func=",func)
+        local th = __threads[name]
+        local co = th and th.co
+        local state = (co and coroutine.status(co)) or "nil"
+        if co and state~="dead" then
+            _p:warn("ThreadAdd - !Existing! Name=",name,"| Thread=",(co and tostring(co) or "nil")," | Status=",state,
+                                            " | runs=",(th and th.cnt~=nil and tostring(th.cnt) or "nil"),
+                                            " | Interval=",(th and th.interval~=nil and tostring(th.interval) or "nil"),
+                                            " | Func=",(th and th.func and tostring(th.func) or "nil"))
+            __killThread(name,th)
+        end
+        th = th or makeTable()
+        __threads[name] = th
+        th.kill = false
+        th.interval = cadence
+        th.func = func
+        th.cnt = 0
+        th.co = coroutine.create(__runThreadFunc)
+        coroutine.resume(th.co,name)
+        _p:info("ThreadAdd - Success. Name=",name," | Interval=",th.interval," | Func=",th.func," | Thread=",th.co," | Status=",coroutine.status(th.co))
+    end
+    if await then
+        __t_add()
+    else
+        coroutine.wrap(__t_add)()
+    end
+end
+function _threads:remove(name,await)
+    local function  __t_remove()
+        if not name or type(name)~="string" or #name==0 then return end
+        local th = __threads[name]
+        if th then
+            local co = th and th.co
+            local state = (co and coroutine.status(co)) or "nil"
+            _p:info("ThreadRemove - Begin. Name=",name,"| Thread=",(co and tostring(co) or "nil"),
+                                                      " | Status=",state,
+                                                      " | runs=",(th and th.cnt~=nil and tostring(th.cnt) or "nil"),
+                                                      " | Interval=",(th and th.interval~=nil and tostring(th.interval) or "nil"),
+                                                      " | Func=",(th and th.func and tostring(th.func) or "nil"))
+            if co and state~="dead" then
+                __killThread(name,th)
+                state = (co and coroutine.status(co)) or "nil"
+            end
+            _p:info("ThreadRemove - End. Name=",name,"| Thread=",(co and tostring(co) or "nil"),
+                                                    " | Status=",state,
+                                                    " | runs=",(th and th.cnt~=nil and tostring(th.cnt) or "nil"),
+                                                    " | Interval=",(th and th.interval~=nil and tostring(th.interval) or "nil"),
+                                                    " | Func=",(th and th.func and tostring(th.func) or "nil"))
+            th = nil
+            __threads[name] = nil
+        else
+            _p:info("ThreadRemove - Not Found. Name=",name)
+        end
+    end
+    if await then
+        __t_remove()
+    else
+        coroutine.wrap(__t_remove)()
+    end
+end
+function _threads:clear(await)
+    local function __t_clear()
+        _p:info("ThreadClear - Begin. Count=",#__threads)
+        for i,v in pairs(__threads) do
+            _p:debug("ThreadClear - Name=",i," | th=",v)
+            _threads:remove(i,true)
+        end
+        table.clear(__threads)
+        _p:info("ThreadClear - End. Count=",#__threads)
+    end
+    if await then
+        __t_clear()
+    else
+        coroutine.wrap(__t_clear)()
+    end
+end
+--------
+end ---- Thread Control
 --------
 
 --------
@@ -289,7 +425,7 @@ end
 function _init:loadResources(resources)
     if resources then
         if not IdleAnim then
-            local tmpIdleAsset = resources["IdleAnim"]
+            local tmpIdleAsset; tmpIdleAsset = resources["IdleAnim"]
             if tmpIdleAsset then
                 IdleAnim = Humanoid:LoadAnimation(resources["IdleAnim"])
                 _p:debug("loadResources - IdleAnim loaded.")
@@ -298,7 +434,7 @@ function _init:loadResources(resources)
             end
         end
         if not MoveAnim then
-            local tmpMoveAsset = resources["MoveAnim"]
+            local tmpMoveAsset; tmpMoveAsset = resources["MoveAnim"]
             if tmpMoveAsset then
                 MoveAnim = Humanoid:LoadAnimation(resources["MoveAnim"])
                 _p:debug("loadResources - MoveAnim loaded.")
@@ -307,7 +443,7 @@ function _init:loadResources(resources)
             end
         end
         if not FlyBarGui then
-            local tmpFlyBar = resources["FlyBarGui"]
+            local tmpFlyBar; tmpFlyBar = resources["FlyBarGui"]
             if tmpFlyBar and typeof(tmpFlyBar)=="Instance" and tmpFlyBar.ClassName=="ScreenGui" then
                 local tmpBar = tmpFlyBar:WaitForChild("Bar")
                 if tmpBar and typeof(tmpBar)=="Instance" and tmpBar.ClassName=="Frame" then
@@ -411,22 +547,26 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
     MoveAnim = nil
     FlyBarGui = nil
     Bar = nil
-    
-    _init:loadResources()
+
+    _init:loadResources(resources)
     if not IdleAnim or not MoveAnim or not FlyBarGui or not Bar then
         local startTm = tick()
         _p:debug("init - waiting for resource load... StartTime=",startTm)
         while (not IdleAnim or not MoveAnim or not FlyBarGui or not Bar) and startTm>(tick()-5) do
             task.wait(0.1)
             _p:debug("init - Attempt loadResources. IdleAnim=",IdleAnim," | MoveAnim=",MoveAnim," | FlyBarGui=",FlyBarGui," | Bar=",Bar," | TimeLeft=",startTm-(tick()-5))
-            _init:loadResources()
+            _init:loadResources(resources)
         end
         _p:debug("init - loadResources success? ",(IdleAnim and MoveAnim and FlyBarGui and Bar)==true," | TimeTaken=",(tick()-startTm))
     end
 
     flyTool = tool
-    if not flyTool.Parent then
+    flyToolParent = tool and tool.Parent
+    if not flyToolParent then
         _p:warn("init - FlyTool has no Parent!")
+    else
+        _p:debug("init - FlyTool=",flyTool)
+        _p:debug("init - FlyTool.Parent=",flyToolParent)
     end
     flyAmountLeft = flySettings.MaxFlyTime
 
@@ -449,25 +589,12 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
     ContextActionService:BindAction("up", internal.HandleMoveAction, false, Enum.PlayerActions.CharacterJump);
     _p:debug("init - ContextActions Bound.")
 
-    if thread_moveActions then
-        if coroutine.status(thread_moveActions)~="dead" then
-            _p:warn("init - move actions loop was still running")
-            coroutine.close(thread_moveActions)
-        end
-        thread_moveActions = nil
-    end
-    thread_moveActions = coroutine.create(function()
-        task.wait()
-        _p:debug("Move Actions Loop Begin")
-        while running do
-            task.wait(0.1)
-            local moveVec = ControlModule and ControlModule:GetMoveVector() or Humanoid and Humanoid.MoveDirection or Vector3:new(0,0,0);
-            MoveActions.forward = -moveVec.Z;
-            MoveActions.right = moveVec.X;
-        end;
-        _p:debug("Move Actions Loop End")
+    _threads:add("MoveActions",0.1,function()
+        local moveVec = ControlModule and ControlModule:GetMoveVector() or Humanoid and Humanoid.MoveDirection or Vector3:new(0,0,0);
+        MoveActions.forward = -moveVec.Z;
+        MoveActions.right = moveVec.X;
     end)
-    coroutine.resume(thread_moveActions)
+    _p:debug("init - MoveActions Loop Started.")
 
     _events:add("CharacterRemovingEvent",LocalPlayer.CharacterRemoving,function()
         _p:debug("CharacterRemovingEvent - Begin")
@@ -477,6 +604,9 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
     _p:debug("init - Connected CharacterRemovingEvent")
 
     _events:add("ToolParentChangeEvent",flyTool:GetPropertyChangedSignal("Parent"),function()
+        _p:debug("ToolParentChangeEvent - Old=",flyToolParent," | New=",flyTool.Parent)
+        flyToolParent = flyTool.Parent
+        --[[
         _p:debug("ToolParentChangeEvent - Begin")
         if not flyTool.Parent then
             if FlyBarGui then
@@ -489,88 +619,94 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
             end
         end;
         _p:debug("ToolParentChangeEvent - End")
+        ]]
     end)
     _p:debug("init - Connected ToolParentChangeEvent")
 
     _events:remove("ToolEquippedEvent")
-    local otherToolConns = getconnections(flyTool.Equipped)
-    _p:debug("init - otherToolConns Cnt=",#otherToolConns)
-    for i, v in pairs(otherToolConns) do
-        _p:debug("init - otherToolConns::",i," | Function=",(v and v.Function))
-        if v and v.Function then
-            local func = v.Function
-            local succ_fi,fi = pcall(function()
-                return debug.getinfo(func)
-            end)
-            if succ_fi then
-                if flySettings.PrintDebug then
-                    _p:debug("init - got func info. Func=",func," | Cnt=",#fi)
-                    for i2,v2 in pairs(fi) do
-                        _p:debug(" --- FuncInfo::",i2,"=",v2," | type=",type(v2), " | typeof=",typeof(v2))
+    _events:remove("ToolUnequippedEvent")
+    _events:remove("ToolActivatedEvent")
+    local function removeConnections(signal)
+        local cnt = 0
+        local otherToolConns = getconnections(signal)
+        _p:debug("init - otherToolConns Cnt=",#otherToolConns)
+        for i, v in pairs(otherToolConns) do
+            _p:debug("init - otherToolConns::",i," | Function=",(v and v.Function))
+            if v and v.Function then
+                cnt = cnt + 1
+                local func = v.Function
+                local succ_fi,fi = pcall(function()
+                    return debug.getinfo(func)
+                end)
+                if succ_fi then
+                    if flySettings.PrintDebug then
+                        _p:debug("init - got func info. Func=",func," | Cnt=",#fi)
+                        for i2,v2 in pairs(fi) do
+                            _p:debug(" --- FuncInfo::",i2,"=",v2," | type=",type(v2), " | typeof=",typeof(v2))
+                        end
                     end
+                else
+                    _p:error("init - failed getting func info! Func=",func," | Error=",fi)
                 end
-            else
-                _p:error("init - failed getting func info! Func=",func," | Error=",fi)
-            end
-            local succ_fEnv,fEnv = pcall(function() 
-                local tmpfEnv = getfenv(func);
-                _p:debug("init - otherToolConns::",i," | script=",(tmpfEnv and tmpfEnv.script))
-                if tmpfEnv and tmpfEnv.script then
-                    sethiddenproperty(tmpfEnv.script,"Disabled",true)
-                    _p:debug("init - otherToolConns::",i," | Disabled script=",(tmpfEnv and tmpfEnv.script))
+                local succ_fEnv,fEnv = pcall(function() 
+                    local tmpfEnv = getfenv(func);
+                    _p:debug("init - otherToolConns::",i," | script=",(tmpfEnv and tmpfEnv.script))
+                    if tmpfEnv and tmpfEnv.script then
+                        sethiddenproperty(tmpfEnv.script,"Disabled",true)
+                        _p:debug("init - otherToolConns::",i," | Disabled script=",(tmpfEnv and tmpfEnv.script))
+                    end
+                    return tmpfEnv
+                end)
+                if not succ_fEnv then
+                    _p:error("init - failed disabling other env! Func=",func," | Error=",fEnv)
                 end
-                return tmpfEnv
-            end)
-            if not succ_fEnv then
-                _p:error("init - failed disabling other env! Func=",func," | Error=",fEnv)
-            end
-            _p:debug("init - disabling connection. Func=",func," | source=",fi.source)
-            local succ_dis,err_dis = pcall(function()
-                v:Disable();
-                return
-            end)
-            if succ_dis then
-                _p:debug("init - disabled connection. Func=",func," | source=",fi.source)
-            else
-                _p:error("init - failed to disable! Func=",func," | Error=",err_dis)
+                _p:debug("init - disabling connection. Func=",func," | source=",fi.source)
+                local succ_dis,err_dis = pcall(function()
+                    v:Disable();
+                    return
+                end)
+                if succ_dis then
+                    _p:debug("init - disabled connection. Func=",func," | source=",fi.source)
+                else
+                    _p:error("init - failed to disable! Func=",func," | Error=",err_dis)
+                end
             end
         end
+        return cnt
     end
-    _events:add("ToolEquippedEvent",flyTool.Equipped,internal.ToggleToolEquipped)
-    _p:debug("init - Connected internal.ToggleToolEquipped")
+    local equippedCnt = removeConnections(flyTool.Equipped)
+    local unequippedCnt = removeConnections(flyTool.Unequipped)
+    local activatedCnt = removeConnections(flyTool.Activated)
+    _p:debug("init - conns removed - Equipped=",equippedCnt," | Unequipped=",unequippedCnt," | Activated=",activatedCnt)
+    _events:add("ToolEquippedEvent",flyTool.Equipped,unequippedCnt==0 and internal.ToggleToolEquipped or internal.ToolEquipped)
+    _p:debug("init - Connected "..(unequippedCnt==0 and "internal.ToggleToolEquipped" or "internal.ToolEquipped"))
+    if unequippedCnt>0 then
+        _events:add("ToolUnequippedEvent",flyTool.Unequipped,internal.ToolUnequipped)
+        _p:debug("init - Connected internal.ToolUnequipped")
+    end
+    if activatedCnt>0 then
+        _events:add("ToolActivatedEvent",flyTool.Activated,internal.ToolActivated)
+        _p:debug("init - Connected internal.ToolActivated")
+    end
 
-    if thread_flyLoop then
-        if coroutine.status(thread_flyLoop)~="dead" then
-            _p:warn("init - fly loop was still running")
-            coroutine.close(thread_flyLoop)
-        end
-        thread_flyLoop = nil
-    end
-    thread_flyLoop = coroutine.create(function()
-        task.wait()
-        _p:debug("fly loop started")
-        while running do
-            task.wait(0.1)
-            if equippedToggle then
-                flyAmountLeft = flyAmountLeft - flySettings.FlyDrainAmount;
-            elseif tick() - unequippedTime > flySettings.FlyRechargeDelay then
-                flyAmountLeft = flyAmountLeft + flySettings.FlyRechargeAmount;
-            end;
-            if flyAmountLeft > flySettings.MaxFlyTime then
-                flyAmountLeft = flySettings.MaxFlyTime;
-            elseif flyAmountLeft < 0 then
-                flyAmountLeft = 0;
-                equippedToggle = false;
-                internal:UnFly();
-                unequippedTime = tick();
-            end;
-            if Bar then
-                Bar.Size = UDim2.new(flyAmountLeft / flySettings.MaxFlyTime * barSize.X.Scale, 0, barSize.Y.Scale, 0);
-            end
+    _threads:add("FlyLoop",0.1,function()
+        if equippedToggle then
+            flyAmountLeft = flyAmountLeft - flySettings.FlyDrainAmount;
+        elseif tick() - unequippedTime > flySettings.FlyRechargeDelay then
+            flyAmountLeft = flyAmountLeft + flySettings.FlyRechargeAmount;
         end;
-        _p:debug("fly loop ended")
+        if flyAmountLeft > flySettings.MaxFlyTime then
+            flyAmountLeft = flySettings.MaxFlyTime;
+        elseif flyAmountLeft < 0 then
+            flyAmountLeft = 0;
+            equippedToggle = false;
+            internal:UnFly();
+            unequippedTime = tick();
+        end;
+        if Bar then
+            Bar.Size = UDim2.new(flyAmountLeft / flySettings.MaxFlyTime * barSize.X.Scale, 0, barSize.Y.Scale, 0);
+        end
     end)
-    coroutine.resume(thread_flyLoop)
 
     _p:info("init - End")
 end
@@ -626,18 +762,22 @@ end ---- Internal Events Mgmt
 do ----- Internal Fly Mechanics
 --------
 function internal:ToggleFlyPhysics(toggle)
-    if not running then return end
     _p:debug("ToggleFlyPhysics Begin - ",toggle)
 	flyEnabled = toggle;
-	BodyGyro.Parent = flyEnabled and HumanoidRootPart or nil;
-	BodyVelocity.Parent = flyEnabled and HumanoidRootPart or nil;
-	BodyGyro.CFrame = HumanoidRootPart.CFrame;
-	BodyVelocity.Velocity = Vector3.new();
-	Animate.Disabled = flyEnabled;
+	if BodyGyro then 
+        BodyGyro.Parent = flyEnabled and HumanoidRootPart or nil;
+        BodyGyro.CFrame = HumanoidRootPart.CFrame;
+    end
+    if BodyVelocity then
+	    BodyVelocity.Parent = flyEnabled and HumanoidRootPart or nil;
+	    BodyVelocity.Velocity = Vector3.new();
+    end
+    if Animate then
+	    Animate.Disabled = flyEnabled;
+    end
     _p:debug("ToggleFlyPhysics End - ",toggle)
 end
 function internal.HandleMoveAction(actionName, userInputState, inputObj)
-    if not running then return end
 	--task.wait();
 	if userInputState == Enum.UserInputState.Begin then
 		MoveActions[actionName] = 1;
@@ -652,7 +792,6 @@ function internal.HandleMoveAction(actionName, userInputState, inputObj)
 	return Enum.ContextActionResult.Pass;
 end
 function internal.HumanoidStateChanged(oldState, newState)
-    if not running then return end
     _p:debug("HumanoidStateChanged Old=",oldState," | New=",newState)
 	if newState == Enum.HumanoidStateType.Landed then
 		jumpState = false;
@@ -663,7 +802,7 @@ function internal.HumanoidStateChanged(oldState, newState)
 	end;
 end
 function internal.FlyMoveMath()
-	if running and flyEnabled then
+	if flyEnabled then
 		local cf = CurrentCamera.CFrame;
 		local v13 = cf.rightVector * (MoveActions.right - MoveActions.left) + cf.lookVector * (MoveActions.forward - MoveActions.backward)
                     + cf.upVector * MoveActions.up
@@ -675,7 +814,8 @@ function internal.FlyMoveMath()
 	end;
 end
 function internal:Fly()
-    if not running then return end
+    if flyEnabled then return end
+    util.onFly:Fire()
     _p:debug("Fly Begin")
     if Humanoid then
 		if Humanoid:GetState() == Enum.HumanoidStateType.Dead then
@@ -704,7 +844,8 @@ function internal:Fly()
     _p:debug("Fly End")
 end
 function internal:UnFly()
-    if not running then return end
+    if not flyEnabled then return end
+    util.onUnFly:Fire()
     _p:debug("UnFly Begin")
     if Humanoid then
         Humanoid.HipHeight = 1;
@@ -734,6 +875,23 @@ function internal:UnFly()
     _events:remove("RenderStepped_FlyMoveMath")
     _p:debug("UnFly End")
 end
+function internal.ToolEquipped()
+    if not running then return end
+    if not equippedToggle and flyAmountLeft > 0 then
+        equippedToggle = true;
+        internal:Fly();
+    elseif Humanoid then
+        Humanoid:UnequipTools()
+    end
+end
+function internal.ToolUnequipped()
+    if not running then return end
+    if equippedToggle then
+        equippedToggle = false;
+        internal:UnFly();
+        unequippedTime = tick();
+    end
+end
 function internal.ToggleToolEquipped()
     if not running then return end
     if equippedToggle then
@@ -748,11 +906,21 @@ function internal.ToggleToolEquipped()
     if not running then return end
     flyTool.Parent = Backpack
 end
+function internal.ToolActivated()
+    if not running then return end
+    util.onFire:Fire()
+end
 --------
 end ---- Internal Fly Mechanics
 --------
 
+
+
+local shutdownRunning=false
 function util:shutdown()
+    if shutdownRunning then return end
+    shutdownRunning=true
+    util.shutdownBegin:Fire()
     coroutine.wrap(function()
         task.wait()
         _p:info("shutdown - Begin")
@@ -762,18 +930,7 @@ function util:shutdown()
         unequippedTime = tick();
         jumpState = false;
         _events:clear()
-        if thread_moveActions then
-            if coroutine.status(thread_moveActions)~="dead" then
-                coroutine.close(thread_moveActions)
-            end
-            thread_moveActions = nil
-        end
-        if thread_flyLoop then
-            if coroutine.status(thread_flyLoop)~="dead" then
-                coroutine.close(thread_flyLoop)
-            end
-            thread_flyLoop = nil
-        end
+        _threads:clear(true)
         if ContextActionService then
             ContextActionService:UnbindAction("forward");
             ContextActionService:UnbindAction("backward");
@@ -782,6 +939,7 @@ function util:shutdown()
             ContextActionService:UnbindAction("up");
             _p:debug("shutdown - ContextActions unbound.")
         end
+        --[[
         if FlyBarGui then
             local succ_des,err_des = pcall(function()
                 --FlyBarGui:Destroy();
@@ -793,10 +951,12 @@ function util:shutdown()
                 _p:error("shutdown - failed to destroy FlyBarGui! Error=",err_des)
             end
         end
+        ]]
         if BodyVelocity then
             local succ_des,err_des = pcall(function() BodyVelocity.Parent=nil;BodyVelocity:Destroy();return;end)
             if succ_des then
                 BodyVelocity=nil
+                _p:debug("shutdown - BodyVelocity destroyed")
             else
                 _p:error("shutdown - failed to destroy BodyVelocity! Error=",err_des)
             end
@@ -805,21 +965,58 @@ function util:shutdown()
             local succ_des,err_des = pcall(function() BodyGyro.Parent=nil;BodyGyro:Destroy();return;end)
             if succ_des then
                 BodyGyro=nil
+                _p:debug("shutown - BodyGyro destroyed")
             else
                 _p:error("shutdown - failed to destroy BodyGyro! Error=",err_des)
             end
         end
+        task.wait(0.222)
         _sched:stop()
         _p:info("shutdown - Scheduler stopped")
         _p:info("shutdown - End")
+        shutdownRunning=false
+        util.shutdownEnd:Fire()
     end)()
 end
 
+local initRunning=false
 function util:init(toolParm,settingsParm,resourcesParm)
+    if initRunning then return end
+    initRunning=true
+    util.initBegin:Fire()
+    local tool,settings,resources = toolParm,settingsParm,resourcesParm
     coroutine.wrap(function()
         task.wait()
-        _init:begin(toolParm,settingsParm,resourcesParm)
+        _init:begin(tool,settings,resources)
+        initRunning=false
+        util.initEnd:Fire()
     end)()
+end
+
+function util:getStatus()
+    if initRunning or shutdownRunning then
+        return "wait"
+    elseif running then
+        return "not_running"
+    else
+        return "running"
+    end
+end
+
+function util:updateSettings(updatedSettings)
+    if initRunning then
+        _p:error("updateSettings - init is running! cannot update settings now.")
+        return
+    elseif shutdownRunning then
+        _p:error("updateSettings - shutdown is running! cannot update settings now.")
+        return
+    elseif not running then
+        _p:error("updateSettings - fly util is NOT running! call 'init' to begin.")
+        return
+    end
+    if updatedSettings and type(updatedSettings)=="table" then
+        _init:applySettings(updatedSettings)
+    end
 end
 
 return util;
