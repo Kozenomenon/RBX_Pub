@@ -1,7 +1,7 @@
 --[[
-    version 1.1.9
+    version 1.1.10
 ]]
-local version = "1.1.9"
+local version = "1.1.10"
 local RunService,Players,ContextActionService
 
 local function makeTable(t)
@@ -17,7 +17,7 @@ local util = makeTable({
     initEnd = Instance.new("BindableEvent"),        -- Fly Util init has finished, can now call util funcs
     onFly = Instance.new("BindableEvent"),          -- when Flying is about to be turned on, Tool.Equipped was triggered
     onUnFly = Instance.new("BindableEvent"),        -- when Flying is about to be turned off, Tool.Unequipped (or Tool.Equipped again) was triggered
-    onFire = Instance.new("BindableEvent"),          -- when Tool.Activated is triggered
+    onFire = Instance.new("BindableEvent"),         -- when Tool.Activated is triggered
     errors = makeTable()
 })
 -- internal locals
@@ -538,7 +538,7 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
         NoDisableAnimate = false,
         ToolRemainsEquipped = false,
         ToolUsesActivated = false,
-        ToolActivateCooldown = 0,
+        ToolActivatedCooldown = 0,
         HipHeightAdjustment = 0,
         NoPlatformStand = false,
     
@@ -760,6 +760,16 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
             _p:debug("init - removeConnections - alt method found tool script=",toolScript)
             sethiddenproperty(toolScript,"Disabled",true)
             _p:debug("init - removeConnections - Disabled script=",toolScript)
+        else
+            local toolChilds = flyTool:GetChildren()
+            for i,v in pairs(toolChilds) do
+                _p:debug("init - removeConnections - child::",i,"=",v," type=",type(v)," typeof=",typeof(v)," class=",(v["ClassName"] or "nil"))
+                if v and typeof(v)=="Instance" and v.ClassName=="LocalScript" then
+                    _p:debug("init - removeConnections - alt method2 found tool script=",v)
+                    sethiddenproperty(v,"Disabled",true)
+                    _p:debug("init - removeConnections - Disabled script=",v)
+                end
+            end
         end
     end
     _events:add("ToolEquippedEvent",flyTool.Equipped,flySettings.ToolRemainsEquipped and internal.ToolEquipped or internal.ToggleToolEquipped)
@@ -974,10 +984,12 @@ function internal.ToolEquipped()
     coroutine.wrap(function()
         if not running then return end
         if not equippedToggle and flyAmountLeft > 0 then
-            equippedToggle = true;
             internal:Fly();
-        elseif Humanoid then
-            Humanoid:UnequipTools()
+            equippedToggle = true;
+        else
+            task.wait(0.1);
+            if not running then return end
+            flyTool.Parent = Backpack
         end
     end)()
 end
@@ -985,8 +997,8 @@ function internal.ToolUnequipped()
     coroutine.wrap(function()
         if not running then return end
         if equippedToggle then
-            equippedToggle = false;
             internal:UnFly();
+            equippedToggle = false;
             unequippedTime = tick();
         end
     end)()
@@ -995,12 +1007,12 @@ function internal.ToggleToolEquipped()
     coroutine.wrap(function()
         if not running then return end
         if equippedToggle then
-            equippedToggle = false;
             internal:UnFly();
+            equippedToggle = false;
             unequippedTime = tick();
         elseif not equippedToggle and flyAmountLeft > 0 then
-            equippedToggle = true;
             internal:Fly();
+            equippedToggle = true;
         end;
         task.wait(0.1);
         if not running then return end
@@ -1010,8 +1022,10 @@ end
 local lastActivated
 function internal.ToolActivated()
     if not running or not equippedToggle then return end
-    if not lastActivated or not flySettings.ToolActivateCooldown or tick()-lastActivated>=flySettings.ToolActivateCooldown then
+    local nowTm = tick()
+    if not lastActivated or not flySettings.ToolActivatedCooldown or nowTm-lastActivated>=flySettings.ToolActivatedCooldown then
         util.onFire:Fire()
+        lastActivated = nowTm
     end
 end
 --------
