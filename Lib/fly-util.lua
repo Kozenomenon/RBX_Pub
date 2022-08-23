@@ -1,7 +1,7 @@
 --[[
-    version 1.1.10
+    version 1.1.11
 ]]
-local version = "1.1.10"
+local version = "1.1.11"
 local RunService,Players,ContextActionService
 
 local function makeTable(t)
@@ -541,6 +541,10 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
         ToolActivatedCooldown = 0,
         HipHeightAdjustment = 0,
         NoPlatformStand = false,
+        NoAnim = false,
+        NoGui = false,
+
+        MaxWaitResources = 2,
     
         PrintUseExternalConsole = false,
         PrintError = false,
@@ -612,12 +616,14 @@ function _init:begin(toolParm,settingsParm,resourcesParm)
     _p:info("init - Main Instances Complete")
 
     _init:loadResources(resources)
-    if not IdleAnim or not MoveAnim or not FlyBarGui or not Bar then
+    if  (not IdleAnim and not flySettings.NoAnim) or 
+        (not MoveAnim and not flySettings.NoAnim) or 
+        ((not FlyBarGui or not Bar) and not flySettings.NoGui) then
         local startTm = tick()
         _p:debug("init - waiting for resource load... StartTime=",startTm)
-        while (not IdleAnim or not MoveAnim or not FlyBarGui or not Bar) and startTm>(tick()-5) do
+        while (not IdleAnim or not MoveAnim or not FlyBarGui or not Bar) and startTm>(tick()-flySettings.MaxWaitResources) do
             task.wait(0.1)
-            _p:debug("init - Attempt loadResources. IdleAnim=",IdleAnim," | MoveAnim=",MoveAnim," | FlyBarGui=",FlyBarGui," | Bar=",Bar," | TimeLeft=",startTm-(tick()-5))
+            _p:debug("init - Attempt loadResources. IdleAnim=",IdleAnim," | MoveAnim=",MoveAnim," | FlyBarGui=",FlyBarGui," | Bar=",Bar," | TimeLeft=",startTm-(tick()-flySettings.MaxWaitResources))
             _init:loadResources(resources)
         end
         _p:debug("init - loadResources success? ",(IdleAnim and MoveAnim and FlyBarGui and Bar)==true," | TimeTaken=",(tick()-startTm))
@@ -1023,7 +1029,9 @@ local lastActivated
 function internal.ToolActivated()
     if not running or not equippedToggle then return end
     local nowTm = tick()
-    if not lastActivated or not flySettings.ToolActivatedCooldown or nowTm-lastActivated>=flySettings.ToolActivatedCooldown then
+    local tmp = flySettings.ToolActivatedCooldown
+    local activatedCooldown = tmp and type(tmp)=="function" and tmp() or tmp
+    if not lastActivated or not activatedCooldown or nowTm-lastActivated>=activatedCooldown then
         util.onFire:Fire()
         lastActivated = nowTm
     end
