@@ -1,6 +1,9 @@
 # Kozerus UI Library
 
-_Credit to [Jxereas](https://github.com/Jxereas) for [Cerebus UI](https://github.com/Jxereas/UI-Libraries) which is this is based off of._ 
+_Credit to [Jxereas](https://github.com/Jxereas) for [Cerebus UI](https://github.com/Jxereas/UI-Libraries) which this is based off of._ 
+<br>
+_Yeah I suppose I could have done it as a fork..._
+<br>
 <br>
 _I may update this readme to a bit more helpful later on..._
 <br>
