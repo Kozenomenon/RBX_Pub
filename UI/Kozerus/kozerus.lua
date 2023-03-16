@@ -181,6 +181,8 @@ if not _G.JxereasExistingHooks.GuiDetectionBypass then
     _G.JxereasExistingHooks.GuiDetectionBypass = true
 end
 
+local elementHolderXScale = 0.975
+
 local TweenService = game:GetService("TweenService")
 local TextService = game:GetService("TextService")
 local UserInputService = game:GetService("UserInputService")
@@ -449,7 +451,7 @@ local function createOriginialElements()
 		pageLogo.Position = UDim2.new(1, -10, 1, -5)
 		pageLogo.Size = UDim2.new(0.774999976, -25, 1, -15)
 		pageLogo.ZIndex = 0
-		pageLogo.Image = "rbxassetid://11435586663"
+		pageLogo.Image = "rbxassetid://12713958989"
 		pageLogo.ImageColor3 = Color3.fromRGB(109, 110, 119)
 		pageLogo.ImageTransparency = 1
 		pageLogo.Parent = holder
@@ -1086,7 +1088,7 @@ local function createOriginialElements()
 		elementHolder.BackgroundColor3 = Color3.fromRGB(59, 59, 71)
 		elementHolder.BorderSizePixel = 0
 		elementHolder.Position = UDim2.new(0, 0, 0, 18)
-		elementHolder.Size = UDim2.new(0.925000012, 0, 0, 0)
+		elementHolder.Size = UDim2.new(elementHolderXScale+0.000000012, 0, 0, 0)
 		elementHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
 		elementHolder.ScrollBarThickness = 0
 
@@ -1342,7 +1344,7 @@ local function createOriginialElements()
 		elementHolder.BackgroundColor3 = Color3.fromRGB(59, 59, 71)
 		elementHolder.BorderSizePixel = 0
 		elementHolder.Position = UDim2.new(0, 0, 0, 18)
-		elementHolder.Size = UDim2.new(0.925000012, 0, 0, 0)
+		elementHolder.Size = UDim2.new(elementHolderXScale+0.000000012, 0, 0, 0)
 		elementHolder.CanvasSize = UDim2.new(0, 0, 0, 0)
 		elementHolder.ScrollBarThickness = 0
 
@@ -2013,13 +2015,118 @@ local function createOriginialElements()
 end
 
 function elementHandler:Remove()
-	self.GuiToRemove:Destroy()
+	if self.unbind_events then self.unbind_events() end
+	for i,v in pairs(self.children or {}) do
+		if v then
+			v:Remove()
+		end
+	end
+	pcall(function() if self.GuiToRemove then self.GuiToRemove:Destroy() end end)
+end
+
+local function getMatchingEnum(name_or_enum,enumType:Enum,default:EnumItem):EnumItem
+	if not enumType then return nil end
+	default = default and default.EnumType==enumType and default or nil
+	local enumItem = default
+	local typ = typeof(name_or_enum)
+	if typ=='string' then
+		for i,v in pairs(enumType:GetEnumItems()) do
+			if v.Name:lower() == name_or_enum:lower() then
+				enumItem = v
+				break
+			end
+		end	
+	elseif typ=='EnumItem' and name_or_enum.EnumType==enumType then
+		enumItem = name_or_enum
+	end
+	return enumItem
+end
+local function getMatchingKeyCode(name_or_keycode,default:EnumItem):EnumItem
+	return getMatchingEnum(name_or_keycode,Enum.KeyCode,default)
+end
+local function getFont(name_or_enum_or_font,default:Font?):Font
+	local typ = typeof(name_or_enum_or_font)
+	local f = default
+	if typ=='string' then
+		f = Enum.Font[name_or_enum_or_font] or default
+	elseif typ=='EnumItem' then
+		f = name_or_enum_or_font.EnumType==Enum.Font and Font.fromEnum(name_or_enum_or_font) or default
+	elseif typ=='Font' then
+		f = name_or_enum_or_font
+	end
+	return f
+end
+local function getTextXAlignment(name_or_enum,default:EnumItem):EnumItem
+	return getMatchingEnum(name_or_enum,Enum.TextXAlignment,default)
+end
+local function getTextYAlignment(name_or_enum,default:EnumItem):EnumItem
+	return getMatchingEnum(name_or_enum,Enum.TextYAlignment,default)
+end
+
+local function getColor(table_or_color3,default:Color3?):Color3
+	local typ = typeof(table_or_color3)
+	local c = default
+	if typ=='table' and #table_or_color3==3 then
+		local rgb = {}
+		for i,v in ipairs(table_or_color3) do
+			local n = tonumber(v)
+			if n~=nil then
+				table.insert(rgb,n)
+			else
+				break
+			end
+		end
+		c = #rgb==3 and Color3.fromRGB(unpack(rgb)) or default
+	elseif typ=='Color3' then
+		c = table_or_color3
+	end
+	return c
+end
+
+local function parseVarArgsToParams(paramConfig:table,args:table)
+	local params = {}
+	if #args==1 and type(args[1])=='table' then
+		for i,v in pairs(args[1]) do
+			for i2,v2 in pairs(paramConfig) do
+				if v2.name==i then
+					local idx = table.find(v2.types,typeof(v))
+					local styp = idx and v2.subtypes and v2.subtypes[v2.types[idx]]
+					if idx and not styp or (v[styp.Field] and typeof(v[styp.Field])==styp.TypeOf) then
+						params[i] = v	
+					end
+				end
+			end
+		end
+	elseif #args>0 then
+		for i,v in pairs(args) do
+			local pm = paramConfig[i]
+			if pm and table.find(pm.types,typeof(v)) then
+				params[pm.name] = v
+			end
+		end
+	end
+	return params
 end
 
 --Add zindex var to determine which window goes over which
 --Add var to only have one window open at a time allowed
-function Library.new(windowName: string, constrainToScreen: boolean?, width: number?, height: number?, visibilityKeybind: string?, backgroundImageId: string?, closeCallback): table
-	local window = setmetatable({}, windowHandler) -- remove elementhandler from window hanlers index?
+local windowParams = {
+	{name='windowName',types={'string'}},
+	{name='constrainToScreen',types={'boolean'}},
+	{name='width',types={'number'}},
+	{name='height',types={'number'}},
+	{name='visibilityKeybind',types={'string','EnumItem'},subtypes={EnumItem={Field='EnumType',TypeOf=Enum.KeyCode}}},
+	{name='backgroundImageId',types={'string'}},
+	{name='closeCallback',types={'function'}},
+	{name='visibilityCallback',types={'function'}},
+	{name='windowMovedCallback',types={'function'}},
+	{name='initialPosition',types={'table','Vector2','UDim2'}},
+	{name='windowTitle',types={'string'}},
+}
+function Library.new(...):table
+	local args = {...}
+	local params = parseVarArgsToParams(windowParams,args)
+	local window = setmetatable({}, windowHandler) 
 	local windowInstance = originalElements.Window:Clone()
 	local startDragMousePos
 	local startDragWindowPos
@@ -2032,12 +2139,30 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 	local buttonHolder = heading.ButtonHolder
 	local holder = background.Holder
 
-	local function getMatchingKeyCodeFromName(name: string)
-		if not name then return end
-		for i, keycode in pairs(Enum.KeyCode:GetEnumItems()) do
-			if keycode.Name:lower() == name:lower() then
-				return keycode
+	local visibilityKeybind = getMatchingKeyCode(params.visibilityKeybind) --or Enum.KeyCode.RightControl
+	local visibilityCallback = params.visibilityCallback
+
+	local kb_event
+	local function handle_keybind()
+		if visibilityKeybind then
+			if not kb_event then
+				kb_event = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
+					if gameProcessedEvent then return end
+					if input.UserInputType == Enum.UserInputType.Keyboard then
+						if input.KeyCode == visibilityKeybind then
+							background.Visible = not background.Visible
+							if visibilityCallback and type(visibilityCallback)=='function' then visibilityCallback(background.Visible) end
+						end
+					end
+				end)
 			end
+		else
+			if kb_event then
+				pcall(function() kb_event:Disconnect() end)
+				kb_event = nil
+			end
+			background.Visible = true
+			if visibilityCallback and type(visibilityCallback)=='function' then visibilityCallback(background.Visible) end
 		end
 	end
 
@@ -2053,6 +2178,7 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 		else
 			background.Position = UDim2.new(0, startDragWindowPos.X + deltaPos.X, 0, startDragWindowPos.Y + deltaPos.Y)	
 		end
+		if params.windowMovedCallback and type(params.windowMovedCallback)=='function' then params.windowMovedCallback(background.Position) end
 	end
 
 	local function onHeadingMouseDown()
@@ -2077,9 +2203,13 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
             task.wait()
 			windowInstance:Destroy() -- add cool tween cause cool
             window = nil
+			if kb_event then
+				pcall(function() kb_event:Disconnect() end)
+				kb_event = nil
+			end
         end)
         closeWindowTween:Play()
-		if closeCallback and type(closeCallback)=="function" then closeCallback() end
+		if params.closeCallback and type(params.closeCallback)=="function" then params.closeCallback() end
 	end
 
 	local function minimizeWindow()
@@ -2133,16 +2263,16 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 		maximizePlusImageTween:Play()
 	end
 
-	if constrainToScreen == nil then
-		constrainToScreen = true
+	if params.constrainToScreen == nil then
+		params.constrainToScreen = true
 	end
 
-	visibilityKeybind = getMatchingKeyCodeFromName(visibilityKeybind) or Enum.KeyCode.RightControl
+	
 
 	window.Type = "Window"
 	window.Instance = windowInstance
 	window.GuiToRemove = windowInstance
-	window.isConstraintedToScreenBoundaries = constrainToScreen
+	window.isConstraintedToScreenBoundaries = params.constrainToScreen
 	window.IsMinimized = false
 	window.IsHidden = false
 	window.TabInfo = {}
@@ -2152,34 +2282,14 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 	buttonHolder.Plus.MouseButton1Click:Connect(maximizeWindow)
 	buttonHolder.Minus.MouseButton1Click:Connect(minimizeWindow)
 
-	local kb_event
-	local function handle_keybind()
-		if visibilityKeybind then
-			if not kb_event then
-				kb_event = UserInputService.InputBegan:Connect(function(input, gameProcessedEvent)
-					if gameProcessedEvent then return end
-					if input.UserInputType == Enum.UserInputType.Keyboard then
-						if input.KeyCode == visibilityKeybind then
-							background.Visible = not background.Visible
-						end
-					end
-				end)
-			end
-		else
-			if kb_event then
-				pcall(function() kb_event:Disconnect() end)
-				kb_event = nil
-			end
-			background.Visible = true
-		end
-	end
+	
 	handle_keybind()
 
 	holder.Tabs.TabsUIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		holder.Tabs.CanvasSize = UDim2.fromOffset(0,holder.Tabs.TabsUIListLayout.AbsoluteContentSize.Y + holder.Tabs.TabsUIListLayout.Padding.Offset)
 	end)
 
-	heading.Title.Text = windowName or "Kozerus"
+	heading.Title.Text = params.windowTitle or params.windowName or "Kozerus"
 
 	-- KOZ EDIT FOR PROTECT GUI
 	local guiPar
@@ -2212,16 +2322,29 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 	windowInstance.Parent = guiPar
 	background.Size = UDim2.fromOffset(background.AbsoluteSize.X, background.AbsoluteSize.Y)
 	
-	if width and height then
-		background.Size = UDim2.fromOffset(width, height)
-	elseif width then
-		background.Size = UDim2.fromOffset(width, background.AbsoluteSize.Y)
-	elseif height then
-		background.Size = UDim2.fromOffset(background.AbsoluteSize.X, height)
+	if params.width and params.height then
+		background.Size = UDim2.fromOffset(params.width, params.height)
+	elseif params.width then
+		background.Size = UDim2.fromOffset(params.width, background.AbsoluteSize.Y)
+	elseif params.height then
+		background.Size = UDim2.fromOffset(background.AbsoluteSize.X, params.height)
 	end
 
-	holder.PageLogo.Image = backgroundImageId or "rbxassetid://11435586663"
-	background.Position = UDim2.new(0, background.AbsolutePosition.X + background.AbsoluteSize.X / 2, 0, background.AbsolutePosition.Y + background.AbsoluteSize.Y / 2 + 36)
+	holder.PageLogo.Image = params.backgroundImageId or "rbxassetid://12713958989"
+	local vp_size = workspace.CurrentCamera.ViewportSize
+	local init_pos = params.initialPosition
+	if init_pos and typeof(init_pos)=='UDim2' and init_pos.X.Offset<vp_size.X and init_pos.Y.Offset<vp_size.Y then
+		background.Position = init_pos
+	elseif init_pos and typeof(init_pos)=='Vector2' and init_pos.X<vp_size.X and init_pos.Y<vp_size.Y then
+		background.Position = UDim2.fromOffset(init_pos.X,init_pos.Y)
+	elseif init_pos and type(init_pos)=='table' and #init_pos==2 and type(init_pos[1])=='number' and type(init_pos[2])=='number' and init_pos[1]<vp_size.X and init_pos[2]<vp_size.Y then
+		background.Position = UDim2.fromOffset(init_pos[1],init_pos[2])
+	else
+		init_pos = nil
+	end
+	if not init_pos then
+		background.Position = UDim2.new(0, background.AbsolutePosition.X + background.AbsoluteSize.X / 2, 0, background.AbsolutePosition.Y + background.AbsoluteSize.Y / 2 + 36)	
+	end
 	background.BackgroundUIAspectRatioConstraint:Destroy()
 	holder.Size = UDim2.new(0,holder.AbsoluteSize.X,0,holder.AbsoluteSize.Y)
 	holder.Position = UDim2.new(0,0,0,heading.AbsoluteSize.Y)
@@ -2233,13 +2356,20 @@ function Library.new(windowName: string, constrainToScreen: boolean?, width: num
 	originialWindowSize = background.AbsoluteSize
 	
 	window.Shutdown = function(self,doCallback:boolean):nil
-		if not doCallback then closeCallback = nil end
+		if not doCallback then params.closeCallback = nil end
 		closeWindow()
 	end
 
-	window.SetVisibilityKeybind = function(self,keybind:string?):nil
-		visibilityKeybind = keybind
+	window.SetVisibilityKeybind = function(self,keybind):nil
+		visibilityKeybind = getMatchingKeyCode(keybind)
 		handle_keybind()
+	end
+
+	window.unbind_events = function()
+		if kb_event then
+			pcall(function() kb_event:Disconnect() end)
+			kb_event = nil
+		end
 	end
 
 	return window
@@ -2249,10 +2379,26 @@ function windowHandler:LockScreenBoundaries(constrainWindowToScreenBoundaries)
 	self.isConstraintedToScreenBoundaries = constrainWindowToScreenBoundaries
 end
 
-function windowHandler:Tab(tabName: string, tabImage: string, includeBottomFrame: boolean, bottomFrameYScale: number): table
+function windowHandler:ChangeText(windowTitle:string?):nil
+	self.Instance.Background.Heading.Title.Text = windowTitle or ''
+end
+
+local tabParams = {
+	{name='tabName',types={'string'}},
+	{name='tabImage',types={'string'}},
+	{name='includeBottomFrame',types={'boolean'}},
+	{name='bottomFrameYScale',types={'number'}},
+	{name='richText',types={'boolean'}},
+	{name='textColor',types={'table','Color3'}},
+	{name='imageColor',types={'table','Color3'}},
+}
+--function windowHandler:Tab(tabName: string, tabImage: string, includeBottomFrame: boolean, bottomFrameYScale: number, richText: boolean, textColor: Color3, imageColor: Color3): table
+function windowHandler:Tab(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(tabParams,args)
 	local tab = setmetatable({}, tabHandler)
 	local tabInstance = originalElements.Tab:Clone()
-	local pageInstance = includeBottomFrame and originalElements.PageWithBottom:Clone() or originalElements.Page:Clone()
+	local pageInstance = params.includeBottomFrame and originalElements.PageWithBottom:Clone() or originalElements.Page:Clone()
 	
 	local tabOpenTween = TweenService:Create(tabInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {BackgroundTransparency = .25})
 	local tabCloseTween = TweenService:Create(tabInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {BackgroundTransparency = 1})
@@ -2361,16 +2507,19 @@ function windowHandler:Tab(tabName: string, tabImage: string, includeBottomFrame
 	end	
 	
 	tab.Type = "Tab"
-	tab.IdentifierText = tabName or "N/A"
+	tab.IdentifierText = params.tabName or "N/A"
 	tab.TabToRemove = tabInstance
 	tab.PageToRemove = pageInstance
 	tab.ElementToParentChildren = pageInstance
-	tab.bottomFrameYScale = bottomFrameYScale or 0.25
-	tab.includeBottomFrame = includeBottomFrame or false
+	tab.bottomFrameYScale = params.bottomFrameYScale or 0.25
+	tab.includeBottomFrame = params.includeBottomFrame or false
 	tab.bottomMinimized = false
 	
-	tabInstance.TabText.Text = tabName or "N/A"
-	tabInstance.TabImage.Image = tabImage or "rbxassetid://11436779516" -- Add n/a found image here later on
+	tabInstance.TabText.RichText = params.richText and true or false
+	tabInstance.TabText.TextColor3 = getColor(params.textColor,tabInstance.TabText.TextColor3)
+	tabInstance.TabText.Text = params.tabName or "N/A"
+	tabInstance.TabImage.ImageColor3 = getColor(params.imageColor,tabInstance.TabImage.ImageColor3)
+	tabInstance.TabImage.Image = params.tabImage or "rbxassetid://11436779516" -- Add n/a found image here later on
 
 	tabInstance.MouseEnter:Connect(onMouseEnter)
 	tabInstance.MouseLeave:Connect(onMouseLeave)
@@ -2405,6 +2554,9 @@ function windowHandler:Tab(tabName: string, tabImage: string, includeBottomFrame
 
 	tab:UpdateFrameScale()
 	
+	self.children = self.children or {}
+	table.insert(self.children,tab)
+
 	return tab
 end
 
@@ -2450,12 +2602,41 @@ function tabHandler:MaximizeBottom():nil
 	self:UpdateFrameScale()
 end
 
-function tabHandler:Remove()
-	self.TabToRemove:Destroy()
-	self.PageToRemove:Destroy()
+function tabHandler:SetBottomFrameYScale(bottomFrameYScale:number?):nil
+	self.bottomFrameYScale = bottomFrameYScale or 0.25
+	self:UpdateFrameScale()
 end
 
-function tabHandler:Section(sectionTitle: string,parentDesignation: string,resizeCallback) 
+function tabHandler:ChangeText(text:string):nil
+	self.TabToRemove.TabText.Text = text
+end
+function tabHandler:SetRichText(richText:boolean):nil
+	self.TabToRemove.TabText.RichText = richText and true or false
+end
+function tabHandler:ChangeTextColor(textColor):nil
+	local tabTxt = self.TabToRemove.TabText
+	tabTxt.TextColor3 = getColor(textColor,tabTxt.TextColor3)
+end
+function tabHandler:ChangeImageColor(imageColor):nil
+	local tabImg = self.TabToRemove.TabImage
+	tabImg.ImageColor3 = getColor(imageColor,tabImg.ImageColor3)
+end
+
+function tabHandler:Remove()
+	elementHandler.Remove(self)
+	pcall(function() if self.TabToRemove then self.TabToRemove:Destroy() end end)
+	pcall(function() if self.PageToRemove then self.PageToRemove:Destroy() end end)
+end
+
+local sectionParams = {
+	{name='sectionTitle',types={'string'}},
+	{name='parentDesignation',types={'string'}},
+	{name='resizeCallback',types={'function'}},
+}
+--function tabHandler:Section(sectionTitle: string,parentDesignation: string,resizeCallback) 
+function tabHandler:Section(...):table
+	local args = {...}
+	local params = parseVarArgsToParams(sectionParams,args)
 	local section = setmetatable({}, sectionHandler)
 	local sectionInstance = originalElements.Section:Clone()
 	local isMaximized = true
@@ -2496,11 +2677,11 @@ function tabHandler:Section(sectionTitle: string,parentDesignation: string,resiz
 			sectionInstanceMaximizeTween:Play()
 			sectionInstanceMaximizeTween:Play()
 		end
-		if resizeCallback then resizeCallback(isMaximized) end
+		if params.resizeCallback and type(params.resizeCallback)=='function' then params.resizeCallback(isMaximized) end
 	end
 	
 	section.Type = "Section"
-	section.IdentiferText = sectionTitle or "N/A"
+	section.IdentiferText = params.sectionTitle or "N/A"
 	section.Instance = sectionInstance
 	section.GuiToRemove = sectionInstance
 	section.ElementToParentChildren = sectionInstance.ElementHolder
@@ -2512,10 +2693,10 @@ function tabHandler:Section(sectionTitle: string,parentDesignation: string,resiz
 		sectionInstance.ElementHolder.Size = UDim2.new(1,0,0, math.max(200 - sectionInstance.Heading.Size.Y.Offset, sectionInstance.ElementHolder.ElementHolderList.AbsoluteContentSize.Y + sectionInstance.ElementHolder.ElementHolderPadding.PaddingBottom.Offset + sectionInstance.ElementHolder.ElementHolderPadding.PaddingTop.Offset))
 	end)
 	
-	sectionInstance.Heading.Title.Text = sectionTitle or "N/A"
+	sectionInstance.Heading.Title.Text = params.sectionTitle or "N/A"
 	local parent
-	if parentDesignation and type(parentDesignation)=='string' then
-		local pd = parentDesignation:lower()
+	if params.parentDesignation and type(params.parentDesignation)=='string' then
+		local pd = params.parentDesignation:lower()
 		if pd=='left' then
 			parent = self.ElementToParentChildren.LeftScrollingFrame
 		elseif pd=='right' then
@@ -2527,6 +2708,9 @@ function tabHandler:Section(sectionTitle: string,parentDesignation: string,resiz
 	sectionInstance.Parent = parent or getShorterScrollingFrame()
 	sectionInstance.Heading.Title.Size = UDim2.new(1,-(sectionInstance.Heading.ResizeButton.AbsoluteSize.X + 5 + 3),0,20)
 	
+	self.children = self.children or {}
+	table.insert(self.children,section)
+
 	return section
 end
 
@@ -2561,6 +2745,9 @@ function elementHandler:Title(titleName: string)
 
 	titleInstance.Parent = self.ElementToParentChildren
 
+	self.children = self.children or {}
+	table.insert(self.children,title)
+
 	return title
 end
 
@@ -2578,14 +2765,26 @@ function titleHandler:ChangeText(newText: string): nil
 	self.Instance.TitleText.Size = UDim2.new(0, requiredTextSpace.X, 1, 0)
 end
 
-function elementHandler:Label(labelInputtedText: string, textSize: number?, textColor: Color3?, textFont: Font?, richText: boolean?): table
+local labelParams = {
+	{name='labelInputtedText',types={'string'}},
+	{name='textSize',types={'number'}},
+	{name='textColor',types={'table','Color3'}},
+	{name='textFont',types={'string','EnumItem','Font'},subtypes={EnumItem={Field='EnumType',TypeOf=Enum.Font}}},
+	{name='richText',types={'boolean'}},
+	{name='textXAlignment',types={'string','EnumItem'},subtypes={EnumItem={Field='EnumType',TypeOf=Enum.TextXAlignment}}},
+	{name='textYAlignment',types={'string','EnumItem'},subtypes={EnumItem={Field='EnumType',TypeOf=Enum.TextYAlignment}}},
+}
+--function elementHandler:Label(labelInputtedText: string, textSize: number?, textColor: Color3?, textFont: Font?, richText: boolean?): table
+function elementHandler:Label(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(labelParams,args)
 	local label = setmetatable({}, labelHandler)
 	local labelInstance = originalElements.Label:Clone()
 	
 	local lbltxt = labelInstance.LabelBackground.LabelText
 
 	label.Type = "Label"
-	label.IdentifierText = labelInputtedText or "N/A"
+	label.IdentifierText = params.labelInputtedText or "N/A"
 	label.Instance = labelInstance
 	label.GuiToRemove = labelInstance
 	label.PlayingAnimations = {}
@@ -2594,14 +2793,20 @@ function elementHandler:Label(labelInputtedText: string, textSize: number?, text
 		self.ChildedElementsInfo[labelInstance] = label
 	end
 	
-	lbltxt.Text = labelInputtedText or "N/A"
-	lbltxt.TextColor3 = textColor or Color3.fromRGB(255,255,255)
-	lbltxt.TextSize = textSize or 13
-	lbltxt.FontFace = textFont or lbltxt.FontFace
-	lbltxt.RichText = richText and true or false
+	lbltxt.Text = params.labelInputtedText or "N/A"
+	lbltxt.TextColor3 = getColor(params.textColor) or Color3.fromRGB(255,255,255)
+	lbltxt.TextSize = params.textSize or 13
+	lbltxt.FontFace = getFont(params.textFont) or lbltxt.FontFace
+	lbltxt.RichText = params.richText and true or false
+	lbltxt.TextXAlignment = getTextXAlignment(params.textXAlignment) or lbltxt.TextXAlignment
+	lbltxt.TextYAlignment = getTextYAlignment(params.textYAlignment) or lbltxt.TextYAlignment
 		
 	labelInstance.Parent = self.ElementToParentChildren
 	label:updateSize()
+
+	self.children = self.children or {}
+	table.insert(self.children,label)
+
 	return label
 end
 
@@ -2650,24 +2855,35 @@ function labelHandler:ChangeText(newText: string, playAnimation: boolean): nil
 end
 
 function labelHandler:ChangeTextSize(textSize:number):nil
-	self.Instance.LabelBackground.LabelText.TextSize = textSize
-	self:ChangeText(self.Instance.LabelBackground.LabelText.Text)
+	local lbltxt = self.Instance.LabelBackground.LabelText
+	lbltxt.TextSize = textSize
+	self:ChangeText(lbltxt.Text)
 end
 
-function labelHandler:ChangeTextFont(textFont:Font):nil
-	self.Instance.LabelBackground.LabelText.FontFace = textFont
-	self:ChangeText(self.Instance.LabelBackground.LabelText.Text)
+function labelHandler:ChangeTextFont(textFont):nil
+	local lbltxt = self.Instance.LabelBackground.LabelText
+	lbltxt.FontFace = getFont(textFont) or lbltxt.FontFace
+	self:ChangeText(lbltxt.Text)
 end
 
-function labelHandler:ChangeTextColor(textColor:Color3):nil
-	self.Instance.LabelBackground.LabelText.TextColor3 = textColor
+function labelHandler:ChangeTextColor(textColor):nil
+	local lbltxt = self.Instance.LabelBackground.LabelText
+	lbltxt.TextColor3 = getColor(textColor) or lbltxt.TextColor3
 end
 
 function labelHandler:SetRichText(richText:boolean):nil
 	self.Instance.LabelBackground.LabelText.RichText = richText and true or false
 end
 
-function elementHandler:Toggle(toggleName: string, callback): table
+local toggleParams = {
+	{name='toggleName',types={'string'}},
+	{name='callback',types={'function'}},
+	{name='richText',types={'boolean'}},
+}
+--function elementHandler:Toggle(toggleName: string, callback, richText: boolean): table
+function elementHandler:Toggle(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(toggleParams,args)
 	local toggle = setmetatable({}, toggleHandler)
 	local toggleInstance = originalElements.Toggle:Clone()
 	local textOffset = 4
@@ -2681,7 +2897,7 @@ function elementHandler:Toggle(toggleName: string, callback): table
 	local imageSizeOffTween = TweenService:Create(toggleInstance.BoxBackground.InnerBox.CenterBox.ToggleImage, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0,0)});
 	
 	toggle.Type = "Toggle"
-	toggle.IdentifierText = toggleName or "N/A"
+	toggle.IdentifierText = params.toggleName or "N/A"
 	toggle.Instance = toggleInstance
 	toggle.GuiToRemove = toggleInstance
 	toggle.Enabled = false
@@ -2690,7 +2906,7 @@ function elementHandler:Toggle(toggleName: string, callback): table
 		self.ChildedElementsInfo[toggleInstance] = toggle
 	end
 	
-	callback = callback or function() end
+	params.callback = params.callback or function() end
 	
 	local function onToggleClick()
 		if toggle.Enabled then
@@ -2705,17 +2921,21 @@ function elementHandler:Toggle(toggleName: string, callback): table
 		
 		toggle.Enabled = not toggle.Enabled
 		
-		callback(toggle.Enabled)
+		params.callback(toggle.Enabled)
 	end
 	
 	toggleInstance.MouseButton1Click:Connect(onToggleClick)
 	
-	toggleInstance.ToggleText.Text = toggleName or "N/A"
+	toggleInstance.ToggleText.Text = params.toggleName or "N/A"
+	toggleInstance.ToggleText.RichText = params.richText and true or false
 	
 	toggleInstance.Parent = self.ElementToParentChildren
 	toggleInstance.ToggleText.Size = UDim2.new(1,-(toggleInstance.BoxBackground.AbsoluteSize.X + textOffset),1,0)
 	toggleInstance.Position = UDim2.fromOffset(toggleInstance.BoxBackground.AbsoluteSize.X + textOffset,0)
 	
+	self.children = self.children or {}
+	table.insert(self.children,toggle)
+
 	return toggle
 end
  -- SET IDENTIFIER IN SELF AND ADD TOGGLES TO EACH IDENTIFIER RADIO GROUP
@@ -2749,8 +2969,18 @@ end
 function toggleHandler:ChangeText(toggleText:string):nil
 	self.Instance.ToggleText.Text = toggleText or "N/A"
 end
+function toggleHandler:SetRichText(richText:boolean):nil
+	self.Instance.ToggleText.RichText = richText and true or false
+end
 
-function elementHandler:Button(buttonName: string, callback): table -- Add Callback to self?
+local buttonParams = {
+	{name='buttonName',types={'string'}},
+	{name='callback',types={'function'}},
+}
+--function elementHandler:Button(buttonName: string, callback): table -- Add Callback to self?
+function elementHandler:Button(...): table -- Add Callback to self?
+	local args = {...}
+	local params = parseVarArgsToParams(buttonParams,args)
 	local button = setmetatable({}, buttonHandler)
 	local buttonInstance = originalElements.Button:Clone()
 	local textOffset = 4
@@ -2759,8 +2989,8 @@ function elementHandler:Button(buttonName: string, callback): table -- Add Callb
 	local buttonExpandTween = TweenService:Create(buttonInstance.CircleBackground.InnerCircle.CenterCircle.ButtonCircle, TweenInfo.new(tweenTime / 2, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(1,1)})
 	local buttonCondenseTween = TweenService:Create(buttonInstance.CircleBackground.InnerCircle.CenterCircle.ButtonCircle, TweenInfo.new(tweenTime / 2, Enum.EasingStyle.Linear), {Size = UDim2.fromScale(0,0)})
 	
-	buttonName = buttonName or "N/A"
-	callback = callback or function() end
+	params.buttonName = params.buttonName or "N/A"
+	params.callback = params.callback or function() end
 	
 	buttonExpandTween.Completed:Connect(function(playbackState)
 		task.wait(.1)
@@ -2771,11 +3001,11 @@ function elementHandler:Button(buttonName: string, callback): table -- Add Callb
 	
 	local function onButtonClick()
 		buttonExpandTween:Play()
-		callback()
+		params.callback()
 	end
 	
 	button.Type = "Button"
-	button.IdentifierText = buttonName or "N/A"
+	button.IdentifierText = params.buttonName or "N/A"
 	button.Instance = buttonInstance
 	button.GuiToRemove = buttonInstance
 	
@@ -2785,16 +3015,27 @@ function elementHandler:Button(buttonName: string, callback): table -- Add Callb
 	
 	buttonInstance.MouseButton1Click:Connect(onButtonClick)
 	
-	buttonInstance.ButtonText.Text = buttonName
+	buttonInstance.ButtonText.Text = params.buttonName
 
 	buttonInstance.Parent = self.ElementToParentChildren
 	buttonInstance.ButtonText.Size = UDim2.new(1,-(buttonInstance.CircleBackground.AbsoluteSize.X + textOffset),1,0)
 	buttonInstance.ButtonText.Position = UDim2.fromOffset(buttonInstance.CircleBackground.AbsoluteSize.X + textOffset,0)
 
+	self.children = self.children or {}
+	table.insert(self.children,button)
+
 	return button
 end
 
-function elementHandler:Dropdown(dropdownName: string,expanded: boolean?): table
+local dropdownParams = {
+	{name='dropdownName',types={'string'}},
+	{name='expanded',types={'boolean'}},
+	{name='richText',types={'boolean'}},
+}
+--function elementHandler:Dropdown(dropdownName: string,expanded: boolean?,richText: boolean?): table
+function elementHandler:Dropdown(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(dropdownParams,args)
 	local dropdown = setmetatable({}, dropdownHandler)
 	local dropdownInstance = originalElements.Dropdown:Clone()
 	local elementHolderInnerBackground = dropdownInstance.ElementHolder.ElementHolderBackground.ElementHolderInnerBackground
@@ -2818,7 +3059,7 @@ function elementHandler:Dropdown(dropdownName: string,expanded: boolean?): table
 	end
 	
 	dropdown.Type = "Dropdown"
-	dropdown.IdentifierText = dropdownName or "N/A"
+	dropdown.IdentifierText = params.dropdownName or "N/A"
 	dropdown.Instance = dropdownInstance
 	dropdown.GuiToRemove = dropdownInstance
 	dropdown.ElementToParentChildren = dropdownInstance.ElementHolder.ElementHolderBackground.ElementHolderInnerBackground
@@ -2830,19 +3071,19 @@ function elementHandler:Dropdown(dropdownName: string,expanded: boolean?): table
 	
 	dropdownInstance.DropdownButton.MouseButton1Click:Connect(onDropdownClicked)
 	
-	elementHolderInnerBackground.ElementHolderInnerBackgroundList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	local content_size_change_event = elementHolderInnerBackground.ElementHolderInnerBackgroundList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		if dropdown.IsExpanded then
 			if elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y == 0 then
 				dropdownInstanceOpenTween = TweenService:Create(dropdownInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0, dropdownInstance.DropdownButton.AbsoluteSize.Y)})
 			else
-				local elementHolderTween = TweenService:Create(dropdownInstance.ElementHolder, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(.925,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)})
+				local elementHolderTween = TweenService:Create(dropdownInstance.ElementHolder, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(elementHolderXScale,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)})
 				dropdownInstanceOpenTween = TweenService:Create(dropdownInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings + dropdownInstance.DropdownButton.Size.Y.Offset)})
 				
 				elementHolderTween:Play()
 			end
 			dropdownInstanceOpenTween:Play()	
 		else
-			dropdownInstance.ElementHolder.Size = UDim2.new(.925,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)
+			dropdownInstance.ElementHolder.Size = UDim2.new(elementHolderXScale,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)
 			if elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y == 0 then
 				dropdownInstanceOpenTween = TweenService:Create(dropdownInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0, dropdownInstance.DropdownButton.AbsoluteSize.Y)})
 			else
@@ -2850,13 +3091,14 @@ function elementHandler:Dropdown(dropdownName: string,expanded: boolean?): table
 			end
 		end
 	end)
-	
-	dropdownInstance.DropdownButton.ButtonBackground.DropdownText.Text = dropdownName or "N/A"
+	local ddTxt = dropdownInstance.DropdownButton.ButtonBackground.DropdownText
+	ddTxt.Text = params.dropdownName or "N/A"
+	ddTxt.RichText = params.richText and true or false
 	
 	dropdownInstance.Parent = self.ElementToParentChildren
 	dropdownInstanceOpenTween = TweenService:Create(dropdownInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0, dropdownInstance.DropdownButton.AbsoluteSize.Y + dropdownInstance.ElementHolder.AbsoluteSize.Y)})
 	
-	if expanded then
+	if params.expanded then
 		onDropdownClicked()
 	end
 
@@ -2865,17 +3107,46 @@ function elementHandler:Dropdown(dropdownName: string,expanded: boolean?): table
 			onDropdownClicked()
 		end
 	end
+
+	dropdown.SetRichText = function(self,richText:boolean):nil
+		ddTxt.RichText = richText and true or false
+	end
+
+	self.children = self.children or {}
+	table.insert(self.children,dropdown)
+
+	dropdown.unbind_events = function()
+		if content_size_change_event then
+			pcall(function() content_size_change_event:Disconnect() end)
+			content_size_change_event = nil
+		end
+	end
 	
 	return dropdown
 end
 
-function dropdownHandler:ChangeText(newText: string)
+function dropdownHandler:ChangeText(newText: string,richText: boolean?):nil
 	newText = newText or "N/A"
-	self.Instance.DropdownButton.ButtonBackground.DropdownText.Text = newText
+	local ddTxt = self.Instance.DropdownButton.ButtonBackground.DropdownText
+	ddTxt.Text = newText
 	self.IdentifierText = newText
+	if richText~=nil then
+		ddTxt.RichText = richText and true or false
+	end
 end
 
-function elementHandler:Slider(sliderName: string, callback, maximumValue: number, minimumValue: number, initialValue: number): table
+local sliderParams = {
+	{name='sliderName',types={'string'}},
+	{name='callback',types={'function'}},
+	{name='maximumValue',types={'number'}},
+	{name='minimumValue',types={'number'}},
+	{name='initialValue',types={'number'}},
+	{name='richText',types={'boolean'}},
+}
+--function elementHandler:Slider(sliderName: string, callback, maximumValue: number, minimumValue: number, initialValue: number, richText: boolean): table
+function elementHandler:Slider(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(sliderParams,args)
 	local slider = setmetatable({}, sliderHandler) -- MAKE RIGHT CLICK AND BAR GOES TO MID
 	local sliderInstance = originalElements.Slider:Clone()
 	local isMouseDown = false
@@ -2885,15 +3156,15 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 	local absPos
 	local absSize
 
-	minimumValue = minimumValue or 0
-	maximumValue = maximumValue or 100
-	initialValue = initialValue or minimumValue
-	initialValue = math.clamp(initialValue,minimumValue,maximumValue)
+	params.minimumValue = params.minimumValue or 0
+	params.maximumValue = params.maximumValue or 100
+	params.initialValue = params.initialValue or params.minimumValue
+	params.initialValue = math.clamp(params.initialValue,params.minimumValue,params.maximumValue)
 	
-	assert(maximumValue > minimumValue, "Maximum must be greater than minimum.")
+	assert(params.maximumValue > params.minimumValue, "Maximum must be greater than minimum.")
 	
 	local textParams = Instance.new("GetTextBoundsParams")
-	textParams.Text = tostring(maximumValue) or "N/A"
+	textParams.Text = tostring(params.maximumValue) or "N/A"
 	textParams.Font = sliderInstance.TextGrouping.NumberText.FontFace
 	textParams.Size = 14
 	textParams.Width = 10000
@@ -2902,13 +3173,13 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 	textParams.Text = "ERR"
 	local requiredErrorTextSpace = TextService:GetTextBoundsAsync(textParams)
 
-	local maxMinRange = math.abs(minimumValue - maximumValue)
-	local sliderValue = initialValue
+	local maxMinRange = math.abs(params.minimumValue - params.maximumValue)
+	local sliderValue = params.initialValue
 	
 	local sliderConnection
 	local endInputConnection
 
-	callback = callback or function() end
+	params.callback = params.callback or function() end
 	
 	local enabled = true
 	local function onMouseDown()
@@ -2920,18 +3191,18 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 
 			if mouse.X < absPos.X then
 				sliderBar.Size = UDim2.new(0,minimumClosePixelsLeft,1,0)
-				sliderValue = minimumValue
+				sliderValue = params.minimumValue
 			elseif mouse.X > absPos.X + absSize.X then
 				sliderBar.Size = UDim2.new(1,0,1,0)
-				sliderValue = maximumValue
+				sliderValue = params.maximumValue
 			else
 				local percentOfBarFilled = (mouse.X - absPos.X) / absSize.X
 				sliderBar.Size = UDim2.new(0,math.max(minimumClosePixelsLeft, mouse.X - absPos.X),1,0)
-				sliderValue = minimumValue + (maxMinRange * percentOfBarFilled)
+				sliderValue = params.minimumValue + (maxMinRange * percentOfBarFilled)
 			end
 			
 			sliderInstance.TextGrouping.NumberText.Text = math.round(sliderValue)
-			callback(sliderValue)
+			params.callback(sliderValue)
 		end
 		
 		onMouseMoved()
@@ -2949,14 +3220,14 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 		if not enabled then return end
 		if enterPressed then
 			local enteredNum = tonumber(sliderInstance.TextGrouping.NumberText.Text)
-			if typeof(enteredNum) == "number" and enteredNum >= minimumValue and enteredNum <= maximumValue then
+			if typeof(enteredNum) == "number" and enteredNum >= params.minimumValue and enteredNum <= params.maximumValue then
 				local absPos = sliderBar.AbsolutePosition
 				local absSize = sliderBar.Parent.EmptySliderBackground.AbsoluteSize
 				local percentOfBarFilled = enteredNum / absSize.X
 				sliderValue = enteredNum
 				sliderInstance.TextGrouping.NumberText.Text = math.round(sliderValue)
-				sliderBar.Size = UDim2.new((sliderValue - minimumValue) / maxMinRange,0,1,0)
-				callback(sliderValue)
+				sliderBar.Size = UDim2.new((sliderValue - params.minimumValue) / maxMinRange,0,1,0)
+				params.callback(sliderValue)
 			else
 				sliderInstance.TextGrouping.NumberText.Text = "ERR"
 				task.wait(.5)
@@ -2970,7 +3241,7 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 	end
 	
 	slider.Type = "Slider"
-	slider.IdentifierText = sliderName or "N/A"
+	slider.IdentifierText = params.sliderName or "N/A"
 	slider.Instance = sliderInstance
 	slider.GuiToRemove = sliderInstance
 	
@@ -2981,24 +3252,25 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 	sliderInstance.SliderBackground.MouseButton1Down:Connect(onMouseDown)
 	sliderInstance.TextGrouping.NumberText.FocusLost:Connect(onFocusLost)
 	
-	sliderInstance.TextGrouping.SliderText.Text = sliderName or "N/A"
-	sliderInstance.TextGrouping.NumberText.Text = math.round(initialValue)
+	sliderInstance.TextGrouping.SliderText.RichText = params.richText and true or false
+	sliderInstance.TextGrouping.SliderText.Text = params.sliderName or "N/A"
+	sliderInstance.TextGrouping.NumberText.Text = math.round(params.initialValue)
 	sliderInstance.TextGrouping.NumberText.Size = UDim2.new(0,math.max(requiredErrorTextSpace.X, requiredNumberTextSpace.X) + textPixelOffset,1,0)
-	sliderBar.Size = UDim2.new((sliderValue - minimumValue) / maxMinRange,0,1,0)
+	sliderBar.Size = UDim2.new((sliderValue - params.minimumValue) / maxMinRange,0,1,0)
 
 	sliderInstance.Parent = self.ElementToParentChildren
 	sliderInstance.TextGrouping.SliderText.Size = UDim2.new(0, sliderInstance.TextGrouping.AbsoluteSize.X - textPixelOffset - requiredNumberTextSpace.X, 1, 0)
 
 	slider.Set = function(self,value:number,doCallback:boolean):nil
-		if typeof(value) == "number" and value >= minimumValue and value <= maximumValue then
+		if typeof(value) == "number" and value >= params.minimumValue and value <= params.maximumValue then
 			local absPos = sliderBar.AbsolutePosition
 			local absSize = sliderBar.Parent.EmptySliderBackground.AbsoluteSize
 			local percentOfBarFilled = value / absSize.X
 			sliderValue = value
 			sliderInstance.TextGrouping.NumberText.Text = math.round(sliderValue)
-			sliderBar.Size = UDim2.new((sliderValue - minimumValue) / maxMinRange,0,1,0)
+			sliderBar.Size = UDim2.new((sliderValue - params.minimumValue) / maxMinRange,0,1,0)
 			if doCallback then
-				callback(sliderValue)	
+				params.callback(sliderValue)	
 			end
 		else
 			sliderInstance.TextGrouping.NumberText.Text = "ERR"
@@ -3018,15 +3290,39 @@ function elementHandler:Slider(sliderName: string, callback, maximumValue: numbe
 	end
 
 	slider.SetMaximum = function(self,max:number):nil
-		maximumValue = max
-		maxMinRange = math.abs(minimumValue - maximumValue)
+		params.maximumValue = max
+		maxMinRange = math.abs(params.minimumValue - params.maximumValue)
 		self:Set(sliderValue)
+	end
+
+	slider.SetRichText = function(self,richText:boolean):nil
+		sliderInstance.TextGrouping.SliderText.RichText = richText and true or false
+	end
+
+	self.children = self.children or {}
+	table.insert(self.children,slider)
+
+	slider.unbind_events = function()
+		if sliderConnection then
+			pcall(function() sliderConnection:Disconnect() end)
+			sliderConnection = nil
+		end
+		if endInputConnection then
+			pcall(function() endInputConnection:Disconnect() end)
+			endInputConnection = nil
+		end
 	end
 
 	return slider
 end
 
-function elementHandler:SearchBar(placeholderText: string): table
+local searchbarParams = {
+	{name='placeholderText',types={'string'}},
+}
+--function elementHandler:SearchBar(placeholderText: string): table
+function elementHandler:SearchBar(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(searchbarParams,args)
 	local searchBar = setmetatable({}, searchBarHandler)
 	local searchBarInstance = originalElements.SearchBar:Clone()
 	local searchBox = searchBarInstance.SearchBarFrame.ButtonBackgroundPadding.SearchBox
@@ -3043,7 +3339,7 @@ function elementHandler:SearchBar(placeholderText: string): table
 	local playingAnimation
 	local searchingText
 	
-	placeholderText = placeholderText or "N/A"
+	params.placeholderText = params.placeholderText or "N/A"
 
 	local function onTextChanged()
 		if searchBar.IsExpanded then
@@ -3074,7 +3370,7 @@ function elementHandler:SearchBar(placeholderText: string): table
 		
 		if playingAnimation then
 			coroutine.close(playingAnimation) 
-			searchBox.PlaceholderText = placeholderText
+			searchBox.PlaceholderText = params.placeholderText
 			searchBox.Text = ""
 		end
 		
@@ -3097,7 +3393,7 @@ function elementHandler:SearchBar(placeholderText: string): table
 				if playingAnimation then coroutine.close(playingAnimation) end
 				playingAnimation = coroutine.create(function()
 					searchBox.PlaceholderText = ""
-					animateText(searchBox, .025, nil, placeholderText, true)
+					animateText(searchBox, .025, nil, params.placeholderText, true)
 					playingAnimation = nil
 				end)
 				coroutine.resume(playingAnimation)
@@ -3126,7 +3422,7 @@ function elementHandler:SearchBar(placeholderText: string): table
 					if playingAnimation then coroutine.close(playingAnimation) end
 					playingAnimation = coroutine.create(function()
 						searchBox.PlaceholderText = ""
-						animateText(searchBox, .025, nil, placeholderText, true)
+						animateText(searchBox, .025, nil, params.placeholderText, true)
 						playingAnimation = nil
 					end)
 					coroutine.resume(playingAnimation)
@@ -3136,7 +3432,7 @@ function elementHandler:SearchBar(placeholderText: string): table
 	end
 	
 	searchBar.Type = "SearchBar"
-	searchBar.IdentifierText = placeholderText or "N/A"
+	searchBar.IdentifierText = params.placeholderText or "N/A"
 	searchBar.Instance = searchBarInstance
 	searchBar.GuiToRemove = searchBarInstance
 	searchBar.ElementToParentChildren = elementHolderInnerBackground
@@ -3150,19 +3446,19 @@ function elementHandler:SearchBar(placeholderText: string): table
 	searchBox:GetPropertyChangedSignal("Text"):Connect(onTextChanged)
 	searchBox.Focused:Connect(onFocused)
 	
-	elementHolderInnerBackground.ElementHolderInnerBackgroundList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+	local content_size_changed_event = elementHolderInnerBackground.ElementHolderInnerBackgroundList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
 		if searchBar.IsExpanded then
 			if elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y == 0 then
 				searchBarInstanceOpenTween = TweenService:Create(searchBarInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,searchBarInstance.SearchBarFrame.Size.Y.Offset)})
 			else
-				local elementHolderOpenTween = TweenService:Create(elementHolder, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(.925,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)})
+				local elementHolderOpenTween = TweenService:Create(elementHolder, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(elementHolderXScale,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)})
 				searchBarInstanceOpenTween = TweenService:Create(searchBarInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings + searchBarInstance.SearchBarFrame.Size.Y.Offset)})	
 				elementHolderOpenTween:Play()		
 			end
 			
 			searchBarInstanceOpenTween:Play()
 		else
-			elementHolder.Size = UDim2.new(.925,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)
+			elementHolder.Size = UDim2.new(elementHolderXScale,0,0,elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y + elementHolderInnerBackgroundPaddings)
 			if elementHolderInnerBackground.ElementHolderInnerBackgroundList.AbsoluteContentSize.Y == 0 then
 				searchBarInstanceOpenTween = TweenService:Create(searchBarInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,searchBarInstance.SearchBarFrame.Size.Y.Offset)})
 			else
@@ -3171,18 +3467,44 @@ function elementHandler:SearchBar(placeholderText: string): table
 		end
 	end)
 	
-	searchBox.PlaceholderText = placeholderText or "N/A"
+	searchBox.PlaceholderText = params.placeholderText or "N/A"
 	
 	searchBarInstance.Parent = self.ElementToParentChildren
 	searchBox.Size = UDim2.new(1,-(searchBox.Parent.SearchImage.AbsoluteSize.X + searchBox.Parent.ButtonBackgroundPadding.PaddingRight.Offset),1,0)
 	searchBarInstanceOpenTween = TweenService:Create(searchBarInstance, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,searchBarInstance.SearchBarFrame.Size.Y.Offset)})	
 	
+	self.children = self.children or {}
+	table.insert(self.children,searchBar)
+
+	searchBar.unbind_events = function()
+		local ev_t = {mouseEnterConnection,mouseLeftConnection,uisFocusLost,content_size_changed_event}
+		for i,v in pairs(ev_t) do
+			if v then
+				pcall(function() v:Disconnect() end)
+			end
+		end
+		table.clear(ev_t)
+		mouseEnterConnection = nil
+		mouseLeftConnection = nil
+		uisFocusLost = nil
+		content_size_changed_event = nil
+	end
+
 	return searchBar
 end
 
+local keybindParams = {
+	{name='keybindName',types={'string'}},
+	{name='pressedCallback',types={'function'}},
+	{name='defaultKey',types={'string','EnumItem'},subtypes={EnumItem={Field='EnumType',TypeOf=Enum.KeyCode}}},
+	{name='changedCallback',types={'function'}},
+}
 --REWORK KEYBIND COMPLETLEY INEFFICENT !!!
 -- ADD RIGHT CLICK TO REMOVE CURRENT KEYBIND TO NOTHING
-function elementHandler:Keybind(keybindName: string, callback, defaultKey: string): table
+--function elementHandler:Keybind(keybindName: string, pressedCallback, defaultKey: string, changedCallback): table
+function elementHandler:Keybind(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(keybindParams,args)
 	local keybind = setmetatable({}, keybindHandler)
 	local keybindInstance = originalElements.Keybind:Clone()
 	local sideClosedTextPaddingPixels = 1
@@ -3203,33 +3525,27 @@ function elementHandler:Keybind(keybindName: string, callback, defaultKey: strin
 	local requiredInputKeyTextSize = TextService:GetTextBoundsAsync(textParams)
 	local requiredInputKeyTextTween = TweenService:Create(keybindInstance.BoxBackground, TweenInfo.new(.25, Enum.EasingStyle.Linear), {Size = UDim2.new(0,requiredInputKeyTextSize.X + keybindInstance.BoxBackground.BoxPadding.PaddingLeft.Offset + keybindInstance.BoxBackground.BoxPadding.PaddingRight.Offset + keybindInstance.BoxBackground.InnerBox.BoxPadding.PaddingLeft.Offset + keybindInstance.BoxBackground.InnerBox.BoxPadding.PaddingRight.Offset,1,0)})
 	
-	callback = callback or function() end
-	keybindName = keybindName or "N/A"
-	defaultKey = defaultKey or "F"
-	
-	local function getMatchingKeyCodeFromName(name: string)
-		if not name then return end
-		for i, keycode in pairs(Enum.KeyCode:GetEnumItems()) do
-			if keycode.Name:lower() == name:lower() then
-				return keycode
-			end
-		end
-	end
+	params.pressedCallback = params.pressedCallback or function() end
+	params.changedCallback = params.changedCallback or function() end
+	params.keybindName = params.keybindName or "N/A"
+	params.defaultKey = getMatchingKeyCode(params.defaultKey,Enum.KeyCode.F)
+
+	local kill_me
 	
 	local function onKeybindClick()
 		local recognizedKey = false
 		local input
 		
 		requiredInputKeyTextTween:Play()
-		
+		if kill_me then return end
 		repeat
 			local gameProcessedEvent
 			input, gameProcessedEvent = UserInputService.InputBegan:Wait()
 			if input.KeyCode.Name ~= "Unknown" then
 				recognizedKey = true
 			end
-		until recognizedKey
-		
+		until (recognizedKey or kill_me)
+		if kill_me then return end
 		isOverriding = true
 		if textAnimation then
 			coroutine.close(textAnimation)	
@@ -3246,23 +3562,25 @@ function elementHandler:Keybind(keybindName: string, callback, defaultKey: strin
 		end)
 		
 		coroutine.resume(textAnimation)
-
-		repeat task.wait() until not inputBeingProcessed
-		defaultKey = input.KeyCode
+		if kill_me then return end
+		repeat task.wait() until (not inputBeingProcessed or kill_me)
+		if kill_me then return end
+		params.defaultKey = input.KeyCode
+		params.changedCallback(params.defaultKey)
 	end
 	
 	local function onInputBegan(input, gameProcessedEvent)
 		inputBeingProcessed = true
 		if gameProcessedEvent then return end
 		if input.UserInputType == Enum.UserInputType.Keyboard then
-			if input.KeyCode == defaultKey then
-				callback()
+			if input.KeyCode == params.defaultKey then
+				params.pressedCallback()
 			end
 		end
 		inputBeingProcessed = false	
 	end
 	-- for toggle radio buttons do a fn to loop all and toggles in table given and setttoggle fn to false  by checking if self.IsToggled
-	requiredInputKeyTextTween.Completed:Connect(function(playbackState)
+	local texttween_completed_event = requiredInputKeyTextTween.Completed:Connect(function(playbackState)
 		if playbackState == Enum.PlaybackState.Completed and not isOverriding then -- Animation runs after other override starts due to tween completed after override starts
 			if textAnimation then
 				coroutine.close(textAnimation)
@@ -3277,29 +3595,56 @@ function elementHandler:Keybind(keybindName: string, callback, defaultKey: strin
 	end)
 	
 	keybind.Type = "Keybind"
-	keybind.IdentifierText = keybindName
+	keybind.IdentifierText = params.keybindName
 	keybind.Instance = keybindInstance
 	keybind.GuiToRemove = keybindInstance
 	
 	UserInputService.InputBegan:Connect(onInputBegan)
 	keybindInstance.MouseButton1Click:Connect(onKeybindClick)
 	
-	keybindInstance.KeybindText.Text = keybindName
-	keybindInstance.BoxBackground.InnerBox.KeyText.Text = defaultKey
-	
-	defaultKey = getMatchingKeyCodeFromName(defaultKey)
+	keybindInstance.KeybindText.Text = params.keybindName
+	keybindInstance.BoxBackground.InnerBox.KeyText.Text = params.defaultKey.Name
 	
 	keybindInstance.Parent = self.ElementToParentChildren
 	originialOffsetSize = keybindInstance.BoxBackground.AbsoluteSize
 	keybindInstance.BoxBackground.Size = UDim2.fromOffset(originialOffsetSize.X,originialOffsetSize.Y)
 	keybindInstance.BoxBackground.BoxAspect:Destroy()
 	keybindInstance.KeybindText.Size = UDim2.new(1,-(originialOffsetSize.X + keybindTextPadding),1,0)
+
+	self.children = self.children or {}
+	table.insert(self.children,keybind)
+
+	keybind.unbind_events = function()
+		kill_me = true
+		if textAnimation then
+			pcall(function() coroutine.close(textAnimation) end)
+			textAnimation = nil
+		end
+		if texttween_completed_event then
+			pcall(function() texttween_completed_event:Disconnect() end)
+			texttween_completed_event = nil
+		end
+	end
+
+	return keybind
 end
 
-function elementHandler:TextBox(textBoxName:string, callback): table
+local textboxParams = {
+	{name='textBoxName',types={'string'}},
+	{name='callback',types={'function'}},
+	{name='initialValue',types={'string'}},
+	{name='placeholderText',types={'string'}},
+	{name='minimumSize',types={'number'}},
+	{name='clearTextOnFocus',types={'boolean'}},
+	{name='callbackOnlyOnEnter',types={'boolean'}},
+}
+--function elementHandler:TextBox(textBoxName:string, callback): table
+function elementHandler:TextBox(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(textboxParams,args)
 	local textBox = setmetatable({}, textBoxHandler)
 	local textBoxInstance = originalElements.TextBox:Clone()
-	local placeholderText = "Type here..."
+	local placeholderText = params.placeholderText or "[Type Here]"
 	local sidePlaceholderTextPadding = 2
 	local textAnimation
 	
@@ -3308,28 +3653,29 @@ function elementHandler:TextBox(textBoxName:string, callback): table
 	local textBoxText = innerBox.TextBoxText
 	
 	local textParams = Instance.new("GetTextBoundsParams")
-	textParams.Text = placeholderText
+	textParams.Text = params.initialValue or placeholderText
 	textParams.Width = 10000
 	textParams.Font = textBoxText.FontFace
 	textParams.Size = 14
 	
-	local requiredPlaceholderTextSpace = TextService:GetTextBoundsAsync(textParams)
+	local requiredPlaceholderTextSize = math.max(TextService:GetTextBoundsAsync(textParams).X,params.minimumSize or 0)
 	
 	local function onInstanceClicked(): nil
 		textBoxText:CaptureFocus()
 	end
 	
 	local function onFocusLost(enterPressed: boolean): nil
-		if enterPressed then callback(textBoxText.Text) end
-		if textAnimation then coroutine.close(textAnimation) end
-		textAnimation = coroutine.create(function()
-			textBoxText.PlaceholderText = ""
-			animateText(textBoxText, .025, _, placeholderText, true)
-			textAnimation = nil
-		end)
-		coroutine.resume(textAnimation)
+		if not params.callbackOnlyOnEnter or enterPressed then params.callback(textBoxText.Text) end
+		if params.clearTextOnFocus then
+			if textAnimation then coroutine.close(textAnimation) end
+			textAnimation = coroutine.create(function()
+				textBoxText.PlaceholderText = ""
+				animateText(textBoxText, .025, _, placeholderText, true)
+				textAnimation = nil
+			end)
+			coroutine.resume(textAnimation)
+		end
 	end
-	
 	local function onFocused()
 		if textAnimation then 
 			coroutine.close(textAnimation) 
@@ -3337,40 +3683,82 @@ function elementHandler:TextBox(textBoxName:string, callback): table
 			textBoxText.Text = ""
 		end
 	end
-	
+
 	local function onTextChanged()
 		local boxBackgroundPaddingNeededSize = (sidePlaceholderTextPadding * 2) + boxBackground.BoxPadding.PaddingLeft.Offset + boxBackground.BoxPadding.PaddingRight.Offset + innerBox.BoxPadding.PaddingLeft.Offset + innerBox.BoxPadding.PaddingRight.Offset
-		textParams.Text = textBoxText.Text
-		local requiredTextSize = TextService:GetTextBoundsAsync(textParams)
-		local textChangedTween = TweenService:Create(boxBackground, TweenInfo.new(.1, Enum.EasingStyle.Linear), {Size = UDim2.new(0,math.clamp(boxBackgroundPaddingNeededSize + requiredTextSize.X, boxBackgroundPaddingNeededSize + requiredPlaceholderTextSpace.X, textBoxInstance.AbsoluteSize.X / 8 * 5),1,0)})
+		textParams = Instance.new("GetTextBoundsParams")
+		textParams.Text = textBoxText.Text or placeholderText
+		textParams.Width = 10000
+		textParams.Font = textBoxText.FontFace
+		textParams.Size = 14
+		local requiredTextSize = math.max(TextService:GetTextBoundsAsync(textParams).X,params.minimumSize or 0)
+		local textChangedTween = TweenService:Create(boxBackground, TweenInfo.new(.1, Enum.EasingStyle.Linear), {Size = UDim2.new(0,math.clamp(boxBackgroundPaddingNeededSize + requiredTextSize, boxBackgroundPaddingNeededSize + requiredPlaceholderTextSize, textBoxInstance.AbsoluteSize.X / 8 * 5),1,0)})
 		textChangedTween:Play()	
 	end
 	
-	textBoxName = textBoxName or "N/A"
-	callback = callback or function() end
+	params.textBoxName = params.textBoxName or "N/A"
+	params.callback = params.callback or function() end
+	params.minimumSize = params.minimumSize or 50
+	params.clearTextOnFocus = params.clearTextOnFocus and true or false
 	
 	textBox.Type = "TextBox"
-	textBox.IdentifierText = textBoxName
+	textBox.IdentifierText = params.textBoxName
 	textBox.Instance = textBoxInstance
 	textBox.GuiToRemove = textBoxInstance
 	
 	textBoxInstance.MouseButton1Click:Connect(onInstanceClicked)
-	textBoxText.FocusLost:Connect(onFocusLost)
-	textBoxText.Focused:Connect(onFocused)
-	textBoxText:GetPropertyChangedSignal("Text"):Connect(onTextChanged)
+	local focus_lost_event = textBoxText.FocusLost:Connect(onFocusLost)
+	if params.clearTextOnFocus then
+		textBoxText.Focused:Connect(onFocused)
+	end
+	local text_changed_event = textBoxText:GetPropertyChangedSignal("Text"):Connect(onTextChanged)
 	
 	textBoxText.PlaceholderText = placeholderText
-	textBoxInstance.TextBoxNameText.Text = textBoxName
+	textBoxText.ClearTextOnFocus = params.clearTextOnFocus
+	textBoxInstance.TextBoxNameText.Text = params.textBoxName
 	
 	textBoxInstance.Parent = self.ElementToParentChildren
-	boxBackground.Size = UDim2.new(0,requiredPlaceholderTextSpace.X + (sidePlaceholderTextPadding * 2) + boxBackground.BoxPadding.PaddingLeft.Offset + boxBackground.BoxPadding.PaddingRight.Offset + innerBox.BoxPadding.PaddingLeft.Offset + innerBox.BoxPadding.PaddingRight.Offset,1,0)
+	boxBackground.Size = UDim2.new(0,requiredPlaceholderTextSize + (sidePlaceholderTextPadding * 2) + boxBackground.BoxPadding.PaddingLeft.Offset + boxBackground.BoxPadding.PaddingRight.Offset + innerBox.BoxPadding.PaddingLeft.Offset + innerBox.BoxPadding.PaddingRight.Offset,1,0)
 	textBoxInstance.TextBoxNameText.Size = UDim2.new(1,-(boxBackground.AbsoluteSize.X + 4),1,0)
 	
+	textBox.Set = function(self,text:string):nil
+		textBoxText.Text = text
+	end
+
+	self.children = self.children or {}
+	table.insert(self.children,textBox)
+
+	textBox.unbind_events = function()
+		if textAnimation then
+			pcall(function() coroutine.close(textAnimation) end)
+			textAnimation = nil
+		end
+		if focus_lost_event then
+			pcall(function() focus_lost_event:Disconnect() end)
+			focus_lost_event = nil
+		end
+		if text_changed_event then
+			pcall(function() text_changed_event:Disconnect() end)
+			text_changed_event = nil
+		end
+	end
+
 	return textBox
 end
 
+function textBoxHandler:ChangeText(titleText:string):nil
+	self.Instance.TextBoxNameText.Text = titleText
+end
+
+local colorwheelParams = {
+	{name='colorWheelName',types={'string'}},
+	{name='callback',types={'function'}},
+}
 --Fix toggle img it's imported as orange make it white
-function elementHandler:ColorWheel(colorWheelName: string, callback): table
+--function elementHandler:ColorWheel(colorWheelName: string, callback): table
+function elementHandler:ColorWheel(...): table
+	local args = {...}
+	local params = parseVarArgsToParams(colorwheelParams,args)
 	local colorWheel = setmetatable({}, colorWheelHandler)
 	local colorWheelInstance = originalElements.ColorWheel:Clone()
 	
@@ -3408,7 +3796,7 @@ function elementHandler:ColorWheel(colorWheelName: string, callback): table
 		colorInputHolder.Red.BoxBackground.InnerBox.ColorValue.Text = math.round(color.R * 255)
 		colorInputHolder.Green.BoxBackground.InnerBox.ColorValue.Text = math.round(color.G * 255)
 		colorInputHolder.Blue.BoxBackground.InnerBox.ColorValue.Text = math.round(color.B * 255)
-		callback(color)
+		params.callback(color)
 	end
 	
 	local function updateSlider()
@@ -3474,12 +3862,12 @@ function elementHandler:ColorWheel(colorWheelName: string, callback): table
 		end)
 	end
 	
+	local inputEndedConnection
+	local mouseMovedConnection
 	local function onWheelMouseDown()
-		local inputEndedConnection
-
 		updateRing()
 
-		local mouseMovedConnection = mouse.Move:Connect(function()
+		mouseMovedConnection = mouse.Move:Connect(function()
 			updateRing()
 		end)
 
@@ -3522,33 +3910,36 @@ function elementHandler:ColorWheel(colorWheelName: string, callback): table
 		
 	end
 	
-	colorWheelName = colorWheelName or "N/A"
-	callback = callback or function() end
+	params.colorWheelName = params.colorWheelName or "N/A"
+	params.callback = params.callback or function() end
 	
 	colorWheel.Type = "ColorWheel"
-	colorWheel.IdentifierText = colorWheelName
+	colorWheel.IdentifierText = params.colorWheelName
 	colorWheel.IsExpanded = false
 	colorWheel.Instance = colorWheelInstance
 	colorWheel.GuiToRemove = colorWheelInstance
 	
-	heading.MouseButton1Click:Connect(onDropdownClicked)
-	slider.MouseButton1Down:Connect(onSliderMouseDown)
-	wheel.MouseButton1Down:Connect(onWheelMouseDown)
+	local dd_clicked_event = heading.MouseButton1Click:Connect(onDropdownClicked)
+	local slid_ms_down_event = slider.MouseButton1Down:Connect(onSliderMouseDown)
+	local wheel_ms_down_event = wheel.MouseButton1Down:Connect(onWheelMouseDown)
 	
-	heading.ColorWheelName.Text = colorWheelName
+	heading.ColorWheelName.Text = params.colorWheelName
 	
 	colorWheelInstance.Parent = self.ElementToParentChildren
 	heading.ColorWheelName.Size = UDim2.new(1, -(heading.BoxBackground.AbsoluteSize.X + 4),1,0)
 	valueHolder.Size = UDim2.new(.9,-(wheel.AbsoluteSize.X + 4),1,0)
 	sliderBar.Position = UDim2.new(1,-sliderBar.AbsoluteSize.X,0,0)
 	
+	local _events = {}
 	for _, rgbFrame in ipairs(valueHolder.ColorInputHolder:GetChildren()) do
 		if rgbFrame:IsA("Frame") then
 			local requiredBoxBackgroundXSize = rgbFrame.BoxBackground.BoxPadding.PaddingLeft.Offset + rgbFrame.BoxBackground.BoxPadding.PaddingRight.Offset + rgbFrame.BoxBackground.InnerBox.BoxPadding.PaddingLeft.Offset + rgbFrame.BoxBackground.InnerBox.BoxPadding.PaddingRight.Offset + requiredRgbTextSize.X + 4
 			rgbFrame.BoxBackground.Size = UDim2.new(0,requiredBoxBackgroundXSize,1,0)	
 			rgbFrame.ColorText.Size = UDim2.new(1,-(requiredBoxBackgroundXSize + 2),1,0)
-			rgbFrame.BoxBackground.InnerBox.ColorValue:GetPropertyChangedSignal("Text"):Connect(function() onColorInputTextChanged(rgbFrame.BoxBackground.InnerBox.ColorValue) end)	
-			rgbFrame.BoxBackground.InnerBox.ColorValue.FocusLost:Connect(function() onColorInputTextLostFocus(rgbFrame.BoxBackground.InnerBox.ColorValue, rgbFrame.Name) end)	
+			local input_text_changed_event = rgbFrame.BoxBackground.InnerBox.ColorValue:GetPropertyChangedSignal("Text"):Connect(function() onColorInputTextChanged(rgbFrame.BoxBackground.InnerBox.ColorValue) end)
+			local input_text_lost_focus_event = rgbFrame.BoxBackground.InnerBox.ColorValue.FocusLost:Connect(function() onColorInputTextLostFocus(rgbFrame.BoxBackground.InnerBox.ColorValue, rgbFrame.Name) end)	
+			table.insert(_events,input_text_changed_event)
+			table.insert(_events,input_text_lost_focus_event)
 		end
 	end
 	
@@ -3561,6 +3952,25 @@ function elementHandler:ColorWheel(colorWheelName: string, callback): table
 		selector.Position = UDim2.new(.5, -x * wheelRadius, .5, y * wheelRadius)
 		sliderBar.Position = UDim2.new(0,value*(slider.AbsoluteSize.X - sliderBar.AbsoluteSize.X),0,0)
 		
+	end
+
+	self.children = self.children or {}
+	table.insert(self.children,colorWheel)
+
+	colorWheel.unbind_events = function()
+		local ev_t = {mouseMovedConnection,inputEndedConnection,dd_clicked_event,slid_ms_down_event,wheel_ms_down_event,unpack(_events)}
+		for i,v in pairs(ev_t) do
+			if v then
+				pcall(function() v:Disconnect() end)
+			end
+		end
+		table.clear(ev_t)
+		table.clear(_events)
+		mouseMovedConnection = nil
+		inputEndedConnection = nil
+		dd_clicked_event = nil
+		slid_ms_down_event = nil
+		wheel_ms_down_event = nil
 	end
 
 	return colorWheel
