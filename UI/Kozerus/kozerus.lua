@@ -872,6 +872,8 @@ local function createOriginialElements()
 	
 	local function createButton()
 		local button = Instance.new("TextButton")
+		local buttonPadding = Instance.new("UIPadding")
+		local buttonCorner = Instance.new("UICorner")
 		local buttonText = Instance.new("TextLabel")
 		local circleBackground = Instance.new("Frame")
 		local circleAspect = Instance.new("UIAspectRatioConstraint")
@@ -887,33 +889,46 @@ local function createOriginialElements()
 		local buttonCircleCorner = Instance.new("UICorner")
 		
 		button.Name = "Button"
-		button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-		button.BackgroundTransparency = 1.000
-		button.BorderSizePixel = 0
-		button.Size = UDim2.new(1, 0, 0, 14)
+		button.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+		button.BackgroundTransparency = 0.95
+		button.BorderSizePixel = 2
+		button.Size = UDim2.new(1, 0, 0, 24)
 		button.AutoButtonColor = false
 		button.Font = Enum.Font.SourceSans
 		button.Text = ""
 		button.TextColor3 = Color3.fromRGB(0, 0, 0)
 		button.TextSize = 14.000
 
+		buttonPadding.Name = "ButtonPadding"
+		buttonPadding.Parent = button
+		buttonPadding.PaddingBottom = UDim.new(0, 4)
+		buttonPadding.PaddingLeft = UDim.new(0, 24)
+		buttonPadding.PaddingRight = UDim.new(0, 24)
+		buttonPadding.PaddingTop = UDim.new(0, 4)
+
+		buttonCorner.Name = "ButtonCorner"
+		buttonCorner.Parent = button
+		buttonCorner.CornerRadius = UDim.new(0.5,0)
+
 		buttonText.Name = "ButtonText"
 		buttonText.Parent = button
 		buttonText.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 		buttonText.BackgroundTransparency = 1.000
-		buttonText.Position = UDim2.new(0, 18, 0, 0)
-		buttonText.Size = UDim2.new(1, -18, 1, 0)
+		buttonText.Size = UDim2.new(1,0,1,0)
 		buttonText.Font = Enum.Font.Gotham
 		buttonText.Text = "Button"
 		buttonText.TextColor3 = Color3.fromRGB(255, 255, 255)
 		buttonText.TextSize = 14.000
-		buttonText.TextXAlignment = Enum.TextXAlignment.Left
+		buttonText.TextXAlignment = Enum.TextXAlignment.Center
+		buttonText.LayoutOrder = 2
 
 		circleBackground.Name = "CircleBackground"
 		circleBackground.Parent = button
 		circleBackground.BackgroundColor3 = Color3.fromRGB(59, 59, 71)
 		circleBackground.BorderSizePixel = 0
-		circleBackground.Size = UDim2.new(1, 0, 1, 0)
+		circleBackground.Size = UDim2.new(0, 18, 1, 0)
+		circleBackground.Position = UDim2.new(0,-18,0,0)
+		circleBackground.LayoutOrder = 1
 
 		circleAspect.Name = "CircleAspect"
 		circleAspect.Parent = circleBackground
@@ -2976,8 +2991,9 @@ end
 local buttonParams = {
 	{name='buttonName',types={'string'}},
 	{name='callback',types={'function'}},
+	{name='richText',types={'boolean'}},
 }
---function elementHandler:Button(buttonName: string, callback): table -- Add Callback to self?
+--function elementHandler:Button(buttonName: string, callback, richText: boolean): table -- Add Callback to self?
 function elementHandler:Button(...): table -- Add Callback to self?
 	local args = {...}
 	local params = parseVarArgsToParams(buttonParams,args)
@@ -3003,6 +3019,18 @@ function elementHandler:Button(...): table -- Add Callback to self?
 		buttonExpandTween:Play()
 		params.callback()
 	end
+	local function onMouseEnter()
+		buttonInstance.BackgroundTransparency = 0.85
+		buttonInstance.BorderColor3 = Color3.fromRGB(0,255,255)
+		buttonInstance.BorderMode = Enum.BorderMode.Outline
+		buttonInstance.BorderSizePixel = 2
+	end
+	local function onMouseLeave()
+		buttonInstance.BackgroundTransparency = 0.95
+		buttonInstance.BorderColor3 = Color3.fromRGB(255,255,255)
+		buttonInstance.BorderMode = Enum.BorderMode.Outline
+		buttonInstance.BorderSizePixel = 1
+	end
 	
 	button.Type = "Button"
 	button.IdentifierText = params.buttonName or "N/A"
@@ -3014,17 +3042,28 @@ function elementHandler:Button(...): table -- Add Callback to self?
 	end
 	
 	buttonInstance.MouseButton1Click:Connect(onButtonClick)
+	buttonInstance.MouseEnter:Connect(onMouseEnter)
+	buttonInstance.MouseLeave:Connect(onMouseLeave)
 	
-	buttonInstance.ButtonText.Text = params.buttonName
+	local btnTxt = buttonInstance.ButtonText
+	btnTxt.RichText = params.richText and true or false
+	btnTxt.Text = params.buttonName
 
 	buttonInstance.Parent = self.ElementToParentChildren
-	buttonInstance.ButtonText.Size = UDim2.new(1,-(buttonInstance.CircleBackground.AbsoluteSize.X + textOffset),1,0)
-	buttonInstance.ButtonText.Position = UDim2.fromOffset(buttonInstance.CircleBackground.AbsoluteSize.X + textOffset,0)
+	--btnTxt.Size = UDim2.new(1,-(buttonInstance.CircleBackground.AbsoluteSize.X + textOffset),1,0)
+	--btnTxt.Position = UDim2.fromOffset(buttonInstance.CircleBackground.AbsoluteSize.X + textOffset,0)
 
 	self.children = self.children or {}
 	table.insert(self.children,button)
 
 	return button
+end
+
+function buttonHandler:ChangeText(text:string):nil
+	self.Instance.ButtonText.Text = text
+end
+function buttonHandler:SetRichText(richText:boolean):nil
+	self.Instance.ButtonText.RichText = richText and true or false
 end
 
 local dropdownParams = {
