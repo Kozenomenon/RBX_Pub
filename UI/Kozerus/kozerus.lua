@@ -3017,6 +3017,16 @@ function labelHandler:SetRichText(richText:boolean):nil
 	self.Instance.LabelBackground.LabelText.RichText = richText and true or false
 end
 
+function labelHandler:ChangeTextXAlignment(textXAlignment):nil
+	local lbltxt = self.Instance.LabelBackground.LabelText
+	lbltxt.TextXAlignment = getTextXAlignment(textXAlignment,lbltxt.TextXAlignment)
+end
+
+function labelHandler:ChangeTextYAlignment(textYAlignment):nil
+	local lbltxt = self.Instance.LabelBackground.LabelText
+	lbltxt.TextYAlignment = getTextXAlignment(textYAlignment,lbltxt.TextYAlignment)
+end
+
 local toggleParams = {
 	{name='toggleName',types={'string'}},
 	{name='callback',types={'function'}},
