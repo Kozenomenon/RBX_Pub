@@ -199,6 +199,7 @@ local elementHandler = {}
 local windowHandler = {}
 local tabHandler = {}
 local sectionHandler = {}
+local subsectionHandler = {}
 local titleHandler = {}
 local labelHandler = {}
 local toggleHandler = {}
@@ -214,6 +215,7 @@ elementHandler.__index = elementHandler
 windowHandler.__index = function(_, i) return rawget(windowHandler, i) or rawget(elementHandler, i) end
 tabHandler.__index = function(_, i ) return rawget(tabHandler, i) or rawget(elementHandler, i) end
 sectionHandler.__index = function(_, i) return rawget(sectionHandler, i) or rawget(elementHandler, i) end
+subsectionHandler.__index = function(_, i) return rawget(subsectionHandler, i) or rawget(sectionHandler, i) or rawget(elementHandler, i) end
 titleHandler.__index = function(_, i) return rawget(titleHandler, i) or rawget(elementHandler, i) end
 labelHandler.__index = function(_, i) return rawget(labelHandler, i) or rawget(elementHandler, i) end
 toggleHandler.__index = function(_, i) return rawget(toggleHandler, i) or rawget(elementHandler, i) end
@@ -259,7 +261,7 @@ local function toCartesian(radius, theta)
 	return math.cos(theta) * radius, math.sin(theta) * radius
 end
 
-local function createOriginialElements()
+local function createOriginalElements()
 	local function createWindow()
 		local screenGui = Instance.new("ScreenGui")
 		local background = Instance.new("Frame")
@@ -486,10 +488,10 @@ local function createOriginialElements()
 		tabText.BackgroundTransparency = 1.000
 		tabText.Position = UDim2.new(0.0350000001, 30, 0, 0)
 		tabText.Size = UDim2.new(0.964999974, -30, 1, 0)
-		tabText.Font = Enum.Font.SourceSans
+		tabText.Font = Enum.Font.Gotham--Enum.Font.SourceSans
 		tabText.Text = "N/A"
 		tabText.TextColor3 = Color3.fromRGB(109, 110, 119)
-		tabText.TextSize = 18.000
+		tabText.TextSize = 14.00--18.000
 		tabText.TextXAlignment = Enum.TextXAlignment.Left
 		tabText.ClipsDescendants = true
 
@@ -674,9 +676,66 @@ local function createOriginialElements()
 		elementHolderPadding.PaddingBottom = UDim.new(0, 4)
 		elementHolderPadding.PaddingLeft = UDim.new(0, 5)
 		elementHolderPadding.PaddingRight = UDim.new(0, 5)
-		elementHolderPadding.PaddingTop = UDim.new(0, 4)	
+		elementHolderPadding.PaddingTop = UDim.new(0, 4)
 		
 		return section
+	end
+
+	local function createSubSection()
+		local subsection = Instance.new('Frame')
+		local subsectionPadding = Instance.new("UIPadding")
+		local subsectionCorner = Instance.new('UICorner')
+		local subsectionBorder = Instance.new('UIStroke')
+		local elementHolder = Instance.new("Frame")
+		local elementHolderList = Instance.new("UIListLayout")
+		local elementHolderPadding = Instance.new("UIPadding")
+
+		subsection.Name = "SubSection"
+		subsection.BackgroundColor3 = Color3.fromRGB(31, 31, 43)
+		subsection.Size = UDim2.new(1, 0, 0, 0)
+		subsection.ClipsDescendants = true
+		subsection.Visible = false
+
+		subsectionPadding.Name = "SubSectionPadding"
+		subsectionPadding.Parent = subsection
+		subsectionPadding.PaddingBottom = UDim.new(0, 6)
+		subsectionPadding.PaddingLeft = UDim.new(0, 0)
+		subsectionPadding.PaddingRight = UDim.new(0, 0)
+		subsectionPadding.PaddingTop = UDim.new(0, 6)
+
+		subsectionCorner.Name = 'SubSectionCorner'
+		subsectionCorner.CornerRadius = UDim.new(0,8)
+		subsectionCorner.Parent = subsection
+
+		subsectionBorder.Name = 'SubSectionBorder'
+		subsectionBorder.Parent = subsection
+		subsectionBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		subsectionBorder.Color = Color3.fromRGB(62,62,86)
+		subsectionBorder.Thickness = 0
+		subsectionBorder.Transparency = 0.25
+		subsectionBorder.Enabled = false
+
+		elementHolder.Name = "ElementHolder"
+		elementHolder.Parent = subsection
+		elementHolder.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		elementHolder.BackgroundTransparency = 1.000
+		elementHolder.BorderSizePixel = 0
+		elementHolder.Size = UDim2.new(1, 0, 0, 0)
+		elementHolder.ClipsDescendants = true
+
+		elementHolderList.Name = "ElementHolderList"
+		elementHolderList.Parent = elementHolder
+		elementHolderList.SortOrder = Enum.SortOrder.LayoutOrder
+		elementHolderList.Padding = UDim.new(0, 5)
+
+		elementHolderPadding.Name = "ElementHolderPadding"
+		elementHolderPadding.Parent = elementHolder
+		elementHolderPadding.PaddingBottom = UDim.new(0, 4)
+		elementHolderPadding.PaddingLeft = UDim.new(0, 5)
+		elementHolderPadding.PaddingRight = UDim.new(0, 5)
+		elementHolderPadding.PaddingTop = UDim.new(0, 4)
+
+		return subsection
 	end
 	
 	local function createTitle()
@@ -2017,6 +2076,7 @@ local function createOriginialElements()
 	originalElements.Page = createPage()
 	originalElements.PageWithBottom = createPage(true)
 	originalElements.Section = createSection()
+	originalElements.SubSection = createSubSection()
 	originalElements.Title = createTitle()
 	originalElements.Label = createLabel()
 	originalElements.Toggle = createToggle()
@@ -2188,7 +2248,7 @@ function Library.new(...):table
 		if window.isConstraintedToScreenBoundaries then
 			local backgroundAbsPos = background.AbsolutePosition
 			local backgroundAbsSize = background.AbsoluteSize
-			
+			viewPortSize = workspace.CurrentCamera.ViewportSize
 			background.Position = UDim2.new(0,math.clamp(startDragWindowPos.X + deltaPos.X, 0 + backgroundAbsSize.X / 2, viewPortSize.X - backgroundAbsSize.X / 2), windowPos.Y.Scale, math.clamp(startDragWindowPos.Y + deltaPos.Y, 0 + backgroundAbsSize.Y / 2,viewPortSize.Y - backgroundAbsSize.Y / 2))
 		else
 			background.Position = UDim2.new(0, startDragWindowPos.X + deltaPos.X, 0, startDragWindowPos.Y + deltaPos.Y)	
@@ -2690,7 +2750,7 @@ function tabHandler:Section(...):table
 			local sectionInstanceMaximizeTween = TweenService:Create(sectionInstance, TweenInfo.new(.15, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,getSectionNeededYOffsetSize())})
 			resizeButtonMaximizeTween:Play()
 			sectionInstanceMaximizeTween:Play()
-			sectionInstanceMaximizeTween:Play()
+			--sectionInstanceMaximizeTween:Play()
 		end
 		if params.resizeCallback and type(params.resizeCallback)=='function' then params.resizeCallback(isMaximized) end
 	end
@@ -2731,6 +2791,73 @@ end
 
 function sectionHandler:ChangeText(sectionTitle:string):nil
 	self.Instance.Heading.Title.Text = sectionTitle or "N/A"
+end
+
+local subsectionParams = {
+	{name='subsectionTitle',types={'string'}},
+	{name='isMaximized',types={'boolean'}},
+}
+--function sectionHandler:SubSection(subsectionTitle:string,isMaximized:boolean):nil
+function sectionHandler:SubSection(...):nil
+	local args = {...}
+	local params = parseVarArgsToParams(subsectionParams,args)
+	local subsection = setmetatable({}, subsectionHandler)
+	local subsectionInstance = originalElements.SubSection:Clone()
+	local isMaximized = params.isMaximized and true or false
+
+	local subsectionInstanceMinimizeTween = TweenService:Create(subsectionInstance, TweenInfo.new(.15, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,0),Visible = false})
+	local subsectionBorderMinimizeTween = TweenService:Create(subsectionInstance.SubSectionBorder, TweenInfo.new(.15, Enum.EasingStyle.Linear), {Thickness = 0,Enabled = false})
+	local function getSubSectionNeededYOffsetSize()
+		local minimumSize = 50
+		return math.max(minimumSize, subsectionInstance.ElementHolder.ElementHolderList.AbsoluteContentSize.Y + subsectionInstance.ElementHolder.ElementHolderPadding.PaddingBottom.Offset + subsectionInstance.ElementHolder.ElementHolderPadding.PaddingTop.Offset + subsectionInstance.SubSectionPadding.PaddingBottom.Offset + subsectionInstance.SubSectionPadding.PaddingTop.Offset)
+	end
+
+	local function onResize()
+		if isMaximized then
+			isMaximized = false
+			subsectionInstanceMinimizeTween:Play()
+			subsectionBorderMinimizeTween:Play()
+		else
+			isMaximized = true
+			local subsectionBorderMaximizeTween = TweenService:Create(subsectionInstance.SubSectionBorder, TweenInfo.new(.15, Enum.EasingStyle.Linear), {Thickness = 2})
+			local subsectionInstanceMaximizeTween = TweenService:Create(subsectionInstance, TweenInfo.new(.15, Enum.EasingStyle.Linear), {Size = UDim2.new(1,0,0,getSubSectionNeededYOffsetSize())})
+			subsectionInstance.SubSectionBorder.Enabled = true
+			subsectionBorderMaximizeTween:Play()
+			subsectionInstance.Visible = true
+			subsectionInstanceMaximizeTween:Play()
+		end
+	end
+
+	subsection.Type = "SubSection"
+	subsection.IdentiferText = params.subsectionTitle or "N/A"
+	subsection.Instance = subsectionInstance
+	subsection.GuiToRemove = subsectionInstance
+	subsection.ElementToParentChildren = subsectionInstance.ElementHolder
+
+	subsectionInstance.Parent = self.ElementToParentChildren
+
+	subsectionInstance.ElementHolder.ElementHolderList:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+		subsectionInstance.Size = UDim2.new(1, 0, 0, isMaximized and getSubSectionNeededYOffsetSize() or 0)
+		subsectionInstance.Visible = isMaximized and true or false
+		subsectionInstance.SubSectionBorder.Thickness = isMaximized and 2 or 0
+		subsectionInstance.SubSectionBorder.Enabled = isMaximized and true or false
+		subsectionInstance.ElementHolder.Size = UDim2.new(1,0,0, math.max(50, subsectionInstance.ElementHolder.ElementHolderList.AbsoluteContentSize.Y + subsectionInstance.ElementHolder.ElementHolderPadding.PaddingBottom.Offset + subsectionInstance.ElementHolder.ElementHolderPadding.PaddingTop.Offset))
+	end)
+
+	if isMaximized then
+		onResize()
+	end
+
+	subsection.ToggleMaximized = function(self,newMaximized:boolean):nil
+		if newMaximized==nil or (newMaximized and true or false)~=isMaximized then
+			onResize()
+		end
+	end
+
+	self.children = self.children or {}
+	table.insert(self.children,subsection)
+
+	return subsection
 end
 
 function elementHandler:Title(titleName: string)
@@ -4015,6 +4142,6 @@ function elementHandler:ColorWheel(...): table
 	return colorWheel
 end
 
-createOriginialElements()
+createOriginalElements()
 
 return Library
